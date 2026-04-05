@@ -519,24 +519,57 @@ async function loadFlights(){
   const lamin=ap.lat-d,lamax=ap.lat+d,lomin=ap.lng-d,lomax=ap.lng+d;
 
   // Sources à essayer dans l'ordre
-  const sources=[
-    // OpenSky direct
-    `https://opensky-network.org/api/states/all?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`,
-    // Via proxy CORS public
-    `https://api.allorigins.win/get?url=${encodeURIComponent(`https://opensky-network.org/api/states/all?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`)}`,
-    // CORS proxy alternatif
-    `https://corsproxy.io/?${encodeURIComponent(`https://opensky-network.org/api/states/all?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`)}`,
+  // ── ADS-B Exchange (pas de clé, CORS ok, données réelles) ──
+  // Format: lat/lon bounding box → /api/lat/{lat}/lon/{lon}/dist/{nm}/
+  const nm = Math.round(d * 60); // degrés → miles nautiques approx
+  const adsbSources = [
+    // ADS-B Exchange public API (mise à jour toutes les ~5s)
+    `https://api.adsb.lol/v2/lat/${ap.lat}/lon/${ap.lng}/dist/${nm}`,
+    // Alternative: tar1090 / globe.adsbexchange.com
+    `https://globe.adsbexchange.com/re-api/?box=${lamin},${lamax},${lomin},${lomax}`,
+    // opensky via proxy no-cors trick
+    `https://api.allorigins.win/raw?url=${encodeURIComponent('https://opensky-network.org/api/states/all?lamin='+lamin+'&lomin='+lomin+'&lamax='+lamax+'&lomax='+lomax)}`,
   ];
 
-  for(const src of sources){
+  for(const src of adsbSources){
     try{
-      const r=await fetch(src,{signal:AbortSignal.timeout(8000)});
+      const r=await fetch(src,{signal:AbortSignal.timeout(7000)});
       if(!r.ok)continue;
-      let data=await r.json();
-      // allorigins wrappe dans {contents: "..."}
-      if(data.contents)data=JSON.parse(data.contents);
-      const states=(data.states||[]).filter(f=>f[5]&&f[6]);
-      if(states.length>0){
+      const data=await r.json();
+
+      let states=null;
+
+      // ADS-B Exchange / adsb.lol format: {ac:[{hex,flight,lat,lon,alt_baro,gs,track,...}]}
+      if(data.ac&&Array.isArray(data.ac)){
+        states=data.ac
+          .filter(a=>a.lat&&a.lon)
+          .map(a=>[
+            (a.flight||a.hex||'').trim(), // 0 callsign
+            (a.hex||'').trim(),            // 1 icao24
+            a.r||'',                       // 2 registration country
+            0,0,
+            a.lon,                         // 5 longitude
+            a.lat,                         // 6 latitude
+            (a.alt_baro||0)*0.3048,        // 7 baro alt metres
+            a.alt_baro===0||a.gnd===1,     // 8 on ground
+            (a.gs||0)*0.514444,            // 9 velocity m/s
+            a.track||0,                    // 10 true track
+            (a.baro_rate||0)/196.85,       // 11 vertical rate m/s
+            null,null,
+            (a.alt_geom||a.alt_baro||0)*0.3048, // 13 geo alt
+            a.squawk||'',                  // 14 squawk
+            false,0,
+            a.from_long||a.dep||'',        // 17 origin
+            a.to_long||a.arr||'',          // 18 destination
+            a.t||a.type||'',              // 19 aircraft type
+          ]);
+      }
+      // OpenSky format: {states:[[]]}
+      else if(data.states&&Array.isArray(data.states)){
+        states=data.states.filter(f=>f[5]&&f[6]);
+      }
+
+      if(states&&states.length>0){
         flights=states;
         isLive=true;
         updateLiveBadge(true);
@@ -545,11 +578,12 @@ async function loadFlights(){
       }
     }catch(e){ continue; }
   }
-  // Toutes les sources ont échoué → démo dynamique
+
+  // Toutes les sources ont échoué → simulation dynamique
   isLive=false;
   updateLiveBadge(false);
   if(!flights.length)flights=demoFlights(ap);
-  else animateDemoFlights(); // bouge les avions existants
+  else animateDemoFlights();
   renderMap();renderList();updateStats();
 }
 
@@ -875,7 +909,7 @@ window.addEventListener('load',()=>{
   const ap=AIRPORTS[curApt];
   initMap(ap);
   loadFlights();
-  refreshInt=setInterval(loadFlights,15000);
+  refreshInt=setInterval(loadFlights,10000);
   // Top search
   document.getElementById('topSearch').addEventListener('keydown',e=>{
     if(e.key==='Enter'){
