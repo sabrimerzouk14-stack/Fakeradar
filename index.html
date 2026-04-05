@@ -9,21 +9,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 :root{
-  --bg:#0E1117;
-  --panel:#161C26;
-  --panel2:#1C2436;
-  --border:#242E40;
-  --border2:#2E3A50;
-  --sky:#4FC3F7;
-  --sky2:#0288D1;
-  --grn:#4CAF50;
-  --amber:#FFC107;
-  --red:#F44336;
-  --txt:#E8EDF5;
-  --txt2:#8A9BB5;
-  --txt3:#3D5070;
-  --plane:#FFD600;
-  --plane-sel:#00E5FF;
+  --bg:#F0F4F8;
+  --panel:#FFFFFF;
+  --panel2:#F5F7FA;
+  --border:#E2E8F0;
+  --border2:#CBD5E1;
+  --sky:#1565C0;
+  --sky2:#1976D2;
+  --grn:#2E7D32;
+  --amber:#F57F17;
+  --red:#C62828;
+  --txt:#1A202C;
+  --txt2:#4A5568;
+  --txt3:#A0AEC0;
+  --plane:#E53935;
+  --plane-sel:#1565C0;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
@@ -34,7 +34,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt
 
 /* Leaflet dark overrides */
 .leaflet-control-zoom{border:none!important;border-radius:8px!important;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.6)!important;margin-right:12px!important;margin-bottom:80px!important}
-.leaflet-control-zoom a{background:rgba(22,28,38,.92)!important;color:var(--txt)!important;font-size:16px!important;line-height:30px!important;width:32px!important;height:32px!important;border:none!important;border-bottom:1px solid var(--border)!important;backdrop-filter:blur(8px)}
+.leaflet-control-zoom a{background:rgba(255,255,255,.96)!important;color:var(--txt)!important;box-shadow:0 1px 4px rgba(0,0,0,.1)!important;font-size:16px!important;line-height:30px!important;width:32px!important;height:32px!important;border:none!important;border-bottom:1px solid var(--border)!important;backdrop-filter:blur(8px)}
 .leaflet-control-zoom a:hover{background:var(--panel2)!important;color:var(--sky)!important}
 .leaflet-popup-content-wrapper{padding:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;border:none!important}
 .leaflet-popup-content{margin:0!important}
@@ -45,9 +45,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt
 .topbar{
   position:fixed;top:0;left:0;right:0;z-index:500;
   height:54px;
-  background:rgba(14,17,23,.88);
+  background:rgba(255,255,255,.94);
   backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--border);
+  border-bottom:1px solid var(--border2);box-shadow:0 1px 8px rgba(0,0,0,.08);
   display:flex;align-items:center;gap:10px;padding:0 12px;
 }
 .tb-logo{
@@ -63,7 +63,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt
 .tb-search{
   flex:1;
   display:flex;align-items:center;gap:8px;
-  background:rgba(28,36,54,.7);
+  background:#F5F7FA;
   border:1px solid var(--border2);
   border-radius:22px;
   padding:7px 14px;
@@ -78,7 +78,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt
 .tb-right{display:flex;gap:8px;align-items:center;flex-shrink:0}
 .tb-btn{
   width:32px;height:32px;border-radius:50%;
-  background:rgba(28,36,54,.7);
+  background:#F5F7FA;
   border:1px solid var(--border2);
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;font-size:15px;color:var(--txt2);
@@ -92,12 +92,12 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt
 /* COUNTER BADGE — en haut à gauche, comme FR24 */
 .counter-badge{
   position:fixed;top:66px;left:12px;z-index:400;
-  background:rgba(14,17,23,.82);
+  background:rgba(255,255,255,.92);
   border:1px solid var(--border2);
   border-radius:8px;
   padding:5px 10px;
   backdrop-filter:blur(8px);
-  display:flex;gap:12px;
+  display:flex;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.1);
 }
 .cb-item{text-align:center}
 .cb-val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--sky)}
@@ -106,17 +106,17 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt
 /* AIRPORT SELECTOR — pill en haut à droite */
 .airport-pill{
   position:fixed;top:66px;right:12px;z-index:400;
-  background:rgba(14,17,23,.82);
+  background:rgba(255,255,255,.92);
   border:1px solid var(--border2);
   border-radius:8px;
   padding:0;
   backdrop-filter:blur(8px);
-  overflow:hidden;
+  overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);
 }
 .airport-pill select{
   background:transparent;border:none;outline:none;
   font-family:'IBM Plex Mono',monospace;
-  font-size:11px;color:var(--sky);
+  font-size:11px;color:var(--sky);background:transparent;
   padding:7px 10px;cursor:pointer;
   -webkit-appearance:none;
 }
@@ -125,8 +125,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt
 .live-badge{
   position:fixed;bottom:calc(env(safe-area-inset-bottom) + 90px);left:12px;z-index:400;
   display:flex;align-items:center;gap:6px;
-  background:rgba(14,17,23,.82);
-  border:1px solid rgba(76,175,80,.3);
+  background:rgba(255,255,255,.92);
+  border:1px solid rgba(46,125,50,.3);box-shadow:0 2px 8px rgba(0,0,0,.1);
   border-radius:50px;
   padding:5px 12px;
   backdrop-filter:blur(8px);
@@ -139,7 +139,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt
 .bottom-tabs{
   position:fixed;bottom:0;left:0;right:0;z-index:500;
   height:60px;
-  background:rgba(14,17,23,.94);
+  background:rgba(255,255,255,.96);
   backdrop-filter:blur(16px);
   border-top:1px solid var(--border);
   display:flex;align-items:center;
@@ -165,13 +165,14 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt
   pointer-events:none;
   transition:background .3s;
 }
-.fsheet-ov.show{pointer-events:all;background:rgba(0,0,0,.25)}
+.fsheet-ov.show{pointer-events:all;background:rgba(0,0,0,.15)}
 
 .fsheet{
   position:fixed;left:0;right:0;bottom:0;z-index:700;
   background:var(--panel);
   border-radius:16px 16px 0 0;
   border-top:1px solid var(--border2);
+  box-shadow:0 -4px 24px rgba(0,0,0,.12);
   transform:translateY(100%);
   transition:transform .38s cubic-bezier(.4,0,.2,1);
   max-height:72dvh;
@@ -179,6 +180,18 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt
   box-shadow:0 -8px 40px rgba(0,0,0,.5);
 }
 .fsheet.show{transform:translateY(0)}
+
+
+/* PLANE PHOTO — like FR24 */
+.fsh-photo{width:100%;height:160px;position:relative;overflow:hidden;background:#F0F4F8;flex-shrink:0}
+.fsh-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.fsh-photo-fb{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#EBF4FF,#F0F4F8);color:var(--txt3)}
+.fsh-photo-fb-ico{font-size:48px;margin-bottom:6px}
+.fsh-photo-fb-txt{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em}
+.fsh-photo-credit{position:absolute;bottom:6px;right:8px;font-size:9px;color:rgba(255,255,255,.7);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;backdrop-filter:blur(4px)}
+.fsh-photo-airline{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.92);border-radius:8px;padding:5px 10px;backdrop-filter:blur(8px);display:flex;align-items:center;gap:6px}
+.fsh-photo-airline-logo{font-size:18px;line-height:1}
+.fsh-photo-airline-name{font-size:11px;font-weight:600;color:var(--txt);font-family:'IBM Plex Sans',sans-serif}
 
 /* Handle */
 .fsh-handle{padding:10px 0 4px;display:flex;justify-content:center;flex-shrink:0;cursor:grab}
@@ -227,6 +240,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt
   background:var(--panel);
   border-radius:16px 16px 0 0;
   border-top:1px solid var(--border2);
+  box-shadow:0 -4px 24px rgba(0,0,0,.12);
   transform:translateY(100%);
   transition:transform .38s cubic-bezier(.4,0,.2,1);
   height:75dvh;
@@ -236,7 +250,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt
 .flpanel.show{transform:translateY(0)}
 .flp-head{padding:14px 16px 10px;flex-shrink:0;border-bottom:1px solid var(--border)}
 .flp-title{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:var(--txt);margin-bottom:8px}
-.flp-search{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border2);border-radius:8px;padding:8px 12px}
+.flp-search{display:flex;align-items:center;gap:8px;background:#F5F7FA;border:1px solid var(--border2);border-radius:8px;padding:8px 12px;}
 .flp-search input{background:none;border:none;outline:none;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:var(--txt);width:100%}
 .flp-search input::placeholder{color:var(--txt3)}
 .flp-close{flex-shrink:0;font-size:18px;color:var(--txt3);cursor:pointer;padding:2px}
@@ -270,6 +284,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt
   background:var(--panel);
   border-radius:16px 16px 0 0;
   border-top:1px solid var(--border2);
+  box-shadow:0 -4px 24px rgba(0,0,0,.12);
   transform:translateY(100%);
   transition:transform .38s cubic-bezier(.4,0,.2,1);
   height:75dvh;
@@ -288,7 +303,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt
 .aptp-body::-webkit-scrollbar{display:none}
 
 /* Table */
-.ft-head{display:flex;padding:7px 14px;background:var(--panel2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2}
+.ft-head{display:flex;padding:7px 14px;background:#F5F7FA;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2;}
 .ft-hc{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3)}
 .ft-row{display:flex;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:.12s}
 .ft-row:active{background:rgba(79,195,247,.06)}
@@ -372,6 +387,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt
 <div class="fsheet-ov" id="fsheetOv" onclick="closeFSheet()"></div>
 <div class="fsheet" id="fsheet">
   <div class="fsh-handle"><div class="fsh-hbar"></div></div>
+  <div class="fsh-photo" id="fshPhoto"><div class="fsh-photo-fb"><div class="fsh-photo-fb-ico">✈️</div><div class="fsh-photo-fb-txt">PHOTO DU VOL</div></div></div>
   <div class="fsh-head">
     <div class="fsh-callsign" id="fshCall">AF1234 <span class="fsh-badge vol" id="fshBadge">EN VOL</span></div>
     <div class="fsh-route">
@@ -474,7 +490,7 @@ function initMap(ap){
   mapObj=L.map('map',{zoomControl:true,scrollWheelZoom:true,tap:true,doubleClickZoom:true})
     .setView([ap.lat,ap.lng],ap.zoom);
   // CartoDB dark tiles
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
     subdomains:'abcd',maxZoom:19,attribution:''
   }).addTo(mapObj);
   // Airport pin
@@ -487,8 +503,8 @@ function initMap(ap){
 
 /* ── PLANE ICON ── */
 function planeIcon(hdg,sel,grnd){
-  const col=sel?'#00E5FF':(grnd?'#FFC107':'#FFD600');
-  const shadow=sel?'drop-shadow(0 0 6px #00E5FF)':'drop-shadow(0 0 3px rgba(255,214,0,.6))';
+  const col=sel?'#1565C0':(grnd?'#F57F17':'#E53935');
+  const shadow=sel?'drop-shadow(0 0 5px rgba(21,101,192,.7))':'drop-shadow(0 0 2px rgba(229,57,53,.5))';
   return L.divIcon({
     className:'',
     html:`<div style="transform:rotate(${hdg||0}deg);font-size:${sel?18:14}px;line-height:1;filter:${shadow};color:${col};text-align:center">✈</div>`,
@@ -585,6 +601,86 @@ function renderList(){
 
 function filterList(){renderList();}
 
+
+/* ── AIRLINE DATA ── */
+const AIRLINE_DATA={
+  AF:{name:'Air France',logo:'🇫🇷',color:'#002157'},
+  EZY:{name:'easyJet',logo:'🟠',color:'#FF6600'},
+  VLG:{name:'Vueling',logo:'🟡',color:'#FFD700'},
+  IBE:{name:'Iberia',logo:'🇪🇸',color:'#CC0000'},
+  KL:{name:'KLM',logo:'🇳🇱',color:'#009CE0'},
+  LH:{name:'Lufthansa',logo:'🇩🇪',color:'#05164D'},
+  BA:{name:'British Airways',logo:'🇬🇧',color:'#2B5DB8'},
+  FR:{name:'Ryanair',logo:'💛',color:'#073590'},
+  TK:{name:'Turkish Airlines',logo:'🇹🇷',color:'#C8102E'},
+  U2:{name:'easyJet',logo:'🟠',color:'#FF6600'},
+  TP:{name:'TAP Portugal',logo:'🇵🇹',color:'#007749'},
+  AZ:{name:'ITA Airways',logo:'🇮🇹',color:'#0033A0'},
+  SN:{name:'Brussels Airlines',logo:'🇧🇪',color:'#0033A0'},
+  SK:{name:'SAS',logo:'🇸🇪',color:'#4B4F54'},
+  OS:{name:'Austrian',logo:'🇦🇹',color:'#CC0000'},
+  LX:{name:'Swiss',logo:'🇨🇭',color:'#CC0000'},
+  EW:{name:'Eurowings',logo:'🟣',color:'#5C0FAE'},
+  DL:{name:'Delta',logo:'🇺🇸',color:'#E01933'},
+  AA:{name:'American',logo:'🇺🇸',color:'#0078D2'},
+  UA:{name:'United',logo:'🇺🇸',color:'#005DAA'},
+};
+
+function getAirlineCode(callsign){
+  if(!callsign)return null;
+  const cs=callsign.trim().toUpperCase();
+  // Try 3-letter code first, then 2-letter
+  for(const k of Object.keys(AIRLINE_DATA)){
+    if(cs.startsWith(k))return k;
+  }
+  return null;
+}
+
+async function fetchPlanePhoto(icao24, callsign){
+  const photoEl=document.getElementById('fshPhoto');
+  const al=getAirlineCode(callsign);
+  const alData=al?AIRLINE_DATA[al]:null;
+
+  // Airline badge HTML
+  const badge=alData?`<div class="fsh-photo-airline"><div class="fsh-photo-airline-logo">${alData.logo}</div><div class="fsh-photo-airline-name">${alData.name}</div></div>`:'';
+
+  // Try Planespotters.net API for real aircraft photo
+  try{
+    const icao=(icao24||'').trim().toLowerCase();
+    if(icao&&icao.length>=4){
+      const url=`https://api.planespotters.net/pub/photos/hex/${icao}`;
+      const r=await fetch(url);
+      if(r.ok){
+        const d=await r.json();
+        if(d.photos&&d.photos.length>0){
+          const p=d.photos[0];
+          const imgUrl=p.thumbnail_large?.src||p.thumbnail?.src;
+          const photographer=p.photographer||'';
+          const reg=p.aircraft?.reg||'';
+          if(imgUrl){
+            photoEl.innerHTML=`
+              <img src="${imgUrl}" alt="Aircraft" onerror="this.parentElement.innerHTML=fallbackPhoto('${callsign}','${alData?.logo||'✈️'}','${alData?.name||''}')">
+              ${badge}
+              <div class="fsh-photo-credit">${reg} · © ${photographer} / Planespotters.net</div>`;
+            return;
+          }
+        }
+      }
+    }
+  }catch(e){}
+
+  // Fallback: styled placeholder
+  photoEl.innerHTML=fallbackPhoto(callsign,alData?.logo||'✈️',alData?.name||'',alData?.color||'#1565C0')+badge;
+}
+
+function fallbackPhoto(call,logo,name,color='#1565C0'){
+  return `<div class="fsh-photo-fb" style="background:linear-gradient(135deg,${color}18,${color}08)">
+    <div class="fsh-photo-fb-ico">${logo}</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:#1A202C;margin-bottom:3px">${call}</div>
+    <div class="fsh-photo-fb-txt">${name||'Photo non disponible'}</div>
+  </div>`;
+}
+
 /* ── OPEN FLIGHT DETAIL ── */
 function openFlight(call,fdata){
   const f=fdata||flights.find(x=>(x[0]||'').trim()===call);
@@ -622,6 +718,8 @@ function openFlight(call,fdata){
   const pct=gnd?0:Math.floor(20+Math.random()*65);
   document.getElementById('fshPfill').style.width=pct+'%';
   document.getElementById('fshPplane').style.left=pct+'%';
+  // fetch photo
+  fetchPlanePhoto(f[1]||f[0]||'',call);
   // show sheet
   document.getElementById('fsheet').classList.add('show');
   document.getElementById('fsheetOv').classList.add('show');
@@ -633,6 +731,7 @@ function openFlight(call,fdata){
 function closeFSheet(){
   document.getElementById('fsheet').classList.remove('show');
   document.getElementById('fsheetOv').classList.remove('show');
+  document.getElementById('fshPhoto').innerHTML='<div class="fsh-photo-fb"><div class="fsh-photo-fb-ico">✈️</div><div class="fsh-photo-fb-txt">PHOTO DU VOL</div></div>';
   selCall=null;renderMap();renderList();
 }
 
