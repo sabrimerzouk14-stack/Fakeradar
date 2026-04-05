@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SkyView — Radar</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{
+  --bg:#080C10;--bg2:#0D1219;--card:#111820;--card2:#162030;
+  --border:#1E2D3D;--border2:#243545;
+  --sky:#00D4FF;--sky-d:#0099CC;--sky-dim:rgba(0,212,255,.15);
+  --grn:#00FF88;--grn-d:#00CC66;--grn-dim:rgba(0,255,136,.12);
+  --red:#FF4466;--red-dim:rgba(255,68,102,.12);
+  --amber:#FFB800;--amber-dim:rgba(255,184,0,.12);
+  --txt:#E8F4FF;--txt2:#7A9BB5;--txt3:#3A5870;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:'Syne',sans-serif;color:var(--txt)}
+
+/* SCANLINE effect */
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);pointer-events:none;z-index:9999}
+
+/* LAYOUT */
+.app{position:fixed;inset:0;display:flex;flex-direction:column}
+
+/* TOP BAR */
+.topbar{height:56px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;position:relative;z-index:100}
+.tb-logo{font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--sky);letter-spacing:.08em;display:flex;align-items:center;gap:8px}
+.tb-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--sky);box-shadow:0 0 8px var(--sky);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.tb-airport{flex:1}
+.tb-airport select{background:var(--card);border:1px solid var(--border2);color:var(--txt);font-family:'Space Mono',monospace;font-size:11px;padding:6px 10px;border-radius:6px;width:100%;outline:none;-webkit-appearance:none}
+.tb-status{display:flex;align-items:center;gap:5px;font-family:'Space Mono',monospace;font-size:10px;color:var(--grn);white-space:nowrap}
+.tb-status-dot{width:6px;height:6px;border-radius:50%;background:var(--grn);box-shadow:0 0 6px var(--grn);animation:pulse 1.5s infinite}
+
+/* MAP */
+.map-wrap{flex:1;position:relative;overflow:hidden;min-height:0}
+#map{width:100%;height:100%}
+
+/* MAP OVERLAY — stats */
+.map-overlay{position:absolute;top:10px;left:10px;right:10px;z-index:500;pointer-events:none;display:flex;gap:8px}
+.stat-pill{background:rgba(8,12,16,.82);border:1px solid var(--border2);border-radius:8px;padding:6px 12px;backdrop-filter:blur(8px);display:flex;align-items:center;gap:7px}
+.stat-pill-val{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--sky)}
+.stat-pill-lbl{font-size:10px;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase}
+
+/* MAP refresh button */
+.btn-refresh{position:absolute;bottom:14px;right:14px;z-index:500;width:44px;height:44px;border-radius:50%;background:var(--sky);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 20px rgba(0,212,255,.35);transition:.2s}
+.btn-refresh:active{transform:scale(.92)}
+.btn-refresh.spin{animation:spin .8s linear}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Leaflet overrides */
+.leaflet-control-zoom{border:none!important;border-radius:10px!important;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.5)!important}
+.leaflet-control-zoom a{background:var(--card)!important;color:var(--sky)!important;font-size:16px!important;line-height:30px!important;width:30px!important;height:30px!important;border:none!important;border-bottom:1px solid var(--border)!important}
+.leaflet-popup-content-wrapper{padding:0!important;border-radius:12px!important;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.6)!important;border:1px solid var(--border2)!important;background:var(--card)!important}
+.leaflet-popup-content{margin:0!important;width:230px!important}
+.leaflet-popup-tip-container{display:none!important}
+.leaflet-control-attribution{font-size:9px!important;background:rgba(8,12,16,.7)!important;color:var(--txt3)!important;padding:2px 6px!important;border-radius:4px!important}
+
+/* BOTTOM PANEL — tabs */
+.panel{flex-shrink:0;background:var(--bg2);border-top:1px solid var(--border)}
+.tabs{display:flex;border-bottom:1px solid var(--border)}
+.tab{flex:1;padding:10px 0;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-align:center;cursor:pointer;color:var(--txt3);border-bottom:2px solid transparent;transition:.2s;position:relative;top:1px}
+.tab.on{color:var(--sky);border-bottom-color:var(--sky)}
+
+/* Flight list */
+.fl-wrap{height:220px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
+.fl-wrap::-webkit-scrollbar{width:3px}
+.fl-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* Search */
+.fl-search{padding:8px 14px;border-bottom:1px solid var(--border)}
+.fl-si{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:7px 12px}
+.fl-si input{background:none;border:none;outline:none;font-family:'Space Mono',monospace;font-size:12px;color:var(--txt);width:100%}
+.fl-si input::placeholder{color:var(--txt3)}
+
+/* Flight row */
+.fr{display:flex;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:.15s;gap:10px}
+.fr:active{background:var(--sky-dim)}
+.fr.hi{background:var(--sky-dim);border-left:2px solid var(--sky)}
+.fr-icon{font-size:13px;flex-shrink:0;width:20px;text-align:center}
+.fr-main{flex:1;min-width:0}
+.fr-call{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--sky);margin-bottom:1px}
+.fr-route{font-size:10px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr-meta{text-align:right;flex-shrink:0}
+.fr-alt{font-family:'Space Mono',monospace;font-size:11px;color:var(--txt);margin-bottom:1px}
+.fr-spd{font-size:10px;color:var(--txt3)}
+.fr-status{display:inline-block;font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:4px;margin-top:2px}
+.fr-status.ok{background:var(--grn-dim);color:var(--grn)}
+.fr-status.land{background:var(--amber-dim);color:var(--amber)}
+.fr-status.dep{background:var(--sky-dim);color:var(--sky)}
+
+/* Flight detail popup on map */
+.fp{font-family:'Space Mono',monospace}
+.fp-head{background:var(--card2);padding:10px 13px;border-bottom:1px solid var(--border)}
+.fp-call{font-size:14px;font-weight:700;color:var(--sky);margin-bottom:2px}
+.fp-airline{font-size:10px;color:var(--txt3)}
+.fp-body{padding:10px 13px}
+.fp-row{display:flex;justify-content:space-between;margin-bottom:6px}
+.fp-lbl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em}
+.fp-val{font-size:11px;color:var(--txt);text-align:right}
+.fp-val.hi{color:var(--sky)}
+
+/* Airport table */
+.at-wrap{height:220px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
+.at-head{display:flex;padding:6px 14px;background:var(--card);border-bottom:1px solid var(--border)}
+.at-hcell{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3)}
+.at-row{display:flex;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:.15s;gap:0}
+.at-row:active{background:var(--sky-dim)}
+.at-cell{font-family:'Space Mono',monospace;font-size:11px;color:var(--txt)}
+.at-cell.muted{color:var(--txt3);font-size:10px}
+.at-cell.sky{color:var(--sky)}
+.at-cell.grn{color:var(--grn)}
+.at-cell.amber{color:var(--amber)}
+.at-cell.red{color:var(--red)}
+.at-badge{font-size:8px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:4px;white-space:nowrap}
+.at-badge.dep{background:var(--sky-dim);color:var(--sky)}
+.at-badge.arr{background:var(--grn-dim);color:var(--grn)}
+.at-badge.del{background:var(--red-dim);color:var(--red)}
+.at-badge.brd{background:var(--amber-dim);color:var(--amber)}
+
+/* Empty/loading */
+.empty{text-align:center;padding:32px 16px;color:var(--txt3)}
+.empty-icon{font-size:30px;margin-bottom:8px;opacity:.4}
+.empty-txt{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.06em}
+.loading{text-align:center;padding:28px;color:var(--txt2)}
+.ld-ring{width:28px;height:28px;border:2px solid var(--border2);border-top-color:var(--sky);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+.ld-txt{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--txt3)}
+
+/* Plane icon on map */
+.plane-icon{font-size:16px;line-height:1;filter:drop-shadow(0 0 4px rgba(0,212,255,.7));transition:transform .5s;cursor:pointer}
+.plane-icon.sel{filter:drop-shadow(0 0 8px rgba(0,255,136,.9))}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="tb-logo">
+      <div class="tb-logo-dot"></div>
+      SKYVIEW
+    </div>
+    <div class="tb-airport">
+      <select id="airportSel" onchange="onAirportChange()">
+        <option value="LFML">🇫🇷 Marseille (MRS)</option>
+        <option value="LFPG">🇫🇷 Paris CDG (CDG)</option>
+        <option value="LFMN">🇫🇷 Nice (NCE)</option>
+        <option value="LFLY">🇫🇷 Lyon (LYS)</option>
+        <option value="LEMD">🇪🇸 Madrid (MAD)</option>
+        <option value="EGLL">🇬🇧 London Heathrow (LHR)</option>
+        <option value="EHAM">🇳🇱 Amsterdam (AMS)</option>
+        <option value="EDDF">🇩🇪 Frankfurt (FRA)</option>
+      </select>
+    </div>
+    <div class="tb-status">
+      <div class="tb-status-dot"></div>
+      LIVE
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="map-overlay">
+      <div class="stat-pill">
+        <div class="stat-pill-val" id="statFlights">—</div>
+        <div class="stat-pill-lbl">Vols</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-val" id="statAlt">—</div>
+        <div class="stat-pill-lbl">Alt. moy.</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-val" id="statSpd">—</div>
+        <div class="stat-pill-lbl">Vit. moy.</div>
+      </div>
+    </div>
+    <button class="btn-refresh" id="btnRefresh" onclick="loadFlights()" title="Rafraîchir">🔄</button>
+  </div>
+
+  <!-- PANEL -->
+  <div class="panel">
+    <div class="tabs">
+      <div class="tab on" id="tabRadar" onclick="switchTab('radar')">✈ RADAR</div>
+      <div class="tab" id="tabDep" onclick="switchTab('dep')">↑ DÉPARTS</div>
+      <div class="tab" id="tabArr" onclick="switchTab('arr')">↓ ARRIVÉES</div>
+    </div>
+
+    <!-- RADAR TAB -->
+    <div id="paneRadar">
+      <div class="fl-search">
+        <div class="fl-si">
+          <span style="color:var(--txt3);font-size:12px">🔍</span>
+          <input type="text" id="flSearch" placeholder="VOL, IMMAT, ALTITUDE..." oninput="filterFlights()">
+        </div>
+      </div>
+      <div class="fl-wrap" id="flightList">
+        <div class="loading"><div class="ld-ring"></div><div class="ld-txt">CONNEXION AU RÉSEAU ADS-B...</div></div>
+      </div>
+    </div>
+
+    <!-- DÉPARTS TAB -->
+    <div id="paneDep" style="display:none">
+      <div class="at-head">
+        <div class="at-hcell" style="flex:1.2">VOL</div>
+        <div class="at-hcell" style="flex:1.8">DESTINATION</div>
+        <div class="at-hcell" style="flex:.9;text-align:right">HEURE</div>
+        <div class="at-hcell" style="flex:1;text-align:right">STATUT</div>
+      </div>
+      <div class="at-wrap" id="depList">
+        <div class="loading"><div class="ld-ring"></div><div class="ld-txt">CHARGEMENT...</div></div>
+      </div>
+    </div>
+
+    <!-- ARRIVÉES TAB -->
+    <div id="paneArr" style="display:none">
+      <div class="at-head">
+        <div class="at-hcell" style="flex:1.2">VOL</div>
+        <div class="at-hcell" style="flex:1.8">PROVENANCE</div>
+        <div class="at-hcell" style="flex:.9;text-align:right">HEURE</div>
+        <div class="at-hcell" style="flex:1;text-align:right">STATUT</div>
+      </div>
+      <div class="at-wrap" id="arrList">
+        <div class="loading"><div class="ld-ring"></div><div class="ld-txt">CHARGEMENT...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── AIRPORTS ── */
+const AIRPORTS = {
+  LFML: {name:'Marseille Provence',code:'MRS',lat:43.4393,lng:5.2214,zoom:9},
+  LFPG: {name:'Paris Charles de Gaulle',code:'CDG',lat:49.0097,lng:2.5479,zoom:8},
+  LFMN: {name:'Nice Côte d\'Azur',code:'NCE',lat:43.6584,lng:7.2159,zoom:9},
+  LFLY: {name:'Lyon Saint-Exupéry',code:'LYS',lat:45.7256,lng:5.0811,zoom:9},
+  LEMD: {name:'Madrid Barajas',code:'MAD',lat:40.4936,lng:-3.5668,zoom:8},
+  EGLL: {name:'London Heathrow',code:'LHR',lat:51.4700,lng:-0.4543,zoom:8},
+  EHAM: {name:'Amsterdam Schiphol',code:'AMS',lat:52.3086,lng:4.7639,zoom:8},
+  EDDF: {name:'Frankfurt Airport',code:'FRA',lat:50.0379,lng:8.5622,zoom:8},
+};
+
+/* ── STATE ── */
+let curAirport = 'LFML';
+let mapObj = null;
+let planeMarkers = {};
+let allFlights = [];
+let selFlight = null;
+let curTab = 'radar';
+let refreshTimer = null;
+
+/* ── MAP INIT ── */
+function initMap(ap) {
+  if (mapObj) { mapObj.remove(); mapObj = null; }
+  mapObj = L.map('map', {
+    zoomControl: true,
+    scrollWheelZoom: true,
+    tap: true,
+    attributionControl: true
+  }).setView([ap.lat, ap.lng], ap.zoom);
+
+  // Dark tile layer
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(mapObj);
+
+  // Airport marker
+  L.marker([ap.lat, ap.lng], {
+    icon: L.divIcon({
+      className: '',
+      html: `<div style="font-size:20px;filter:drop-shadow(0 0 6px rgba(0,212,255,.8))">🏛️</div>`,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    })
+  }).addTo(mapObj).bindTooltip(ap.name, {permanent: false, direction: 'top'});
+
+  // Range circle
+  L.circle([ap.lat, ap.lng], {
+    radius: 250000,
+    color: 'rgba(0,212,255,.15)',
+    fillColor: 'rgba(0,212,255,.03)',
+    fillOpacity: 1,
+    weight: 1,
+    dashArray: '4 8'
+  }).addTo(mapObj);
+}
+
+/* ── LOAD FLIGHTS from OpenSky ── */
+async function loadFlights() {
+  const btn = document.getElementById('btnRefresh');
+  btn.classList.add('spin');
+
+  const ap = AIRPORTS[curAirport];
+  // Bounding box: ±2.5° autour de l'aéroport
+  const d = 2.5;
+  const lamin = ap.lat - d, lamax = ap.lat + d;
+  const lomin = ap.lng - d, lomax = ap.lng + d;
+
+  const url = `https://opensky-network.org/api/states/all?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`;
+
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('API error');
+    const data = await resp.json();
+    allFlights = (data.states || []).filter(s => s[5] !== null && s[6] !== null);
+    renderFlights();
+    renderTable();
+    updateStats();
+    updatePlaneMarkers();
+    document.getElementById('tabRadar').textContent = `✈ RADAR (${allFlights.length})`;
+  } catch(e) {
+    // Demo mode avec données simulées si l'API échoue
+    allFlights = generateDemoFlights(ap);
+    renderFlights();
+    renderTable();
+    updateStats();
+    updatePlaneMarkers();
+    document.getElementById('tabRadar').textContent = `✈ RADAR (${allFlights.length}) ★`;
+  }
+
+  btn.classList.remove('spin');
+  setTimeout(() => btn.classList.remove('spin'), 900);
+}
+
+/* ── DEMO DATA (si OpenSky indisponible) ── */
+function generateDemoFlights(ap) {
+  const airlines = ['AF','EZY','VLG','IBE','KL','LH','BA','FR','U2','TK'];
+  const routes = [
+    ['Paris CDG','London LHR','Madrid MAD','Amsterdam AMS','Frankfurt FRA','Rome FCO','Barcelona BCN','Berlin BER'],
+    ['CDG','LHR','MAD','AMS','FRA','FCO','BCN','BER']
+  ];
+  const types = ['A320','B737','A321','B787','A380','A319','E190','A350'];
+  const res = [];
+  const n = 18 + Math.floor(Math.random()*12);
+  for (let i = 0; i < n; i++) {
+    const lat = ap.lat + (Math.random()-0.5)*4;
+    const lng = ap.lng + (Math.random()-0.5)*4;
+    const alt = Math.floor(3000 + Math.random()*35000);
+    const spd = Math.floor(200 + Math.random()*500);
+    const hdg = Math.floor(Math.random()*360);
+    const al = airlines[Math.floor(Math.random()*airlines.length)];
+    const num = Math.floor(1000+Math.random()*9000);
+    const ri = Math.floor(Math.random()*8);
+    res.push([
+      `${al}${num}`,  // 0 callsign
+      `${al}${num}`,  // 1 icao
+      'FR',           // 2 origin
+      0,              // 3 time
+      0,              // 4 last
+      lng,            // 5 lon
+      lat,            // 6 lat
+      alt*0.3048,     // 7 baro alt (m)
+      Math.random()>.3, // 8 on ground
+      spd*0.514,      // 9 velocity (m/s)
+      hdg,            // 10 true track
+      0,              // 11 vertical rate
+      null,           // 12 sensors
+      alt*0.3048,     // 13 geo alt
+      null,           // 14 squawk
+      false,          // 15 spi
+      0,              // 16 position source
+      // extra
+      routes[0][ri],  // origin city
+      routes[1][ri],  // dest code
+      types[Math.floor(Math.random()*types.length)] // aircraft type
+    ]);
+  }
+  return res;
+}
+
+/* ── RENDER FLIGHT LIST ── */
+function renderFlights() {
+  const q = (document.getElementById('flSearch')?.value || '').toUpperCase();
+  const list = document.getElementById('flightList');
+  if (!allFlights.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">📡</div><div class="empty-txt">AUCUN VOL DÉTECTÉ</div></div>';
+    return;
+  }
+  const fl = q ? allFlights.filter(f => {
+    const call = (f[0]||'').trim().toUpperCase();
+    const alt = Math.round((f[7]||0)/0.3048).toString();
+    return call.includes(q) || alt.includes(q);
+  }) : allFlights;
+
+  list.innerHTML = fl.map((f, i) => {
+    const call = (f[0]||'—').trim() || '—';
+    const alt  = f[7] ? Math.round(f[7]/0.3048).toLocaleString() + ' ft' : '—';
+    const spd  = f[9] ? Math.round(f[9]*1.944) + ' kt' : '—';
+    const gnd  = f[8];
+    const status = gnd ? 'land' : (f[9] && f[9]*1.944 < 180 ? 'dep' : 'ok');
+    const statusLbl = gnd ? 'AU SOL' : (status==='dep' ? 'MONTÉE' : 'EN VOL');
+    const origin = f[17] || '';
+    const dest   = f[18] || '';
+    const route  = origin && dest ? `${origin} → ${dest}` : (origin || dest || 'Route inconnue');
+    const isHi = selFlight === call;
+    return `<div class="fr${isHi?' hi':''}" onclick="selectFlight('${call}',${f[6]},${f[5]})">
+      <div class="fr-icon">${gnd ? '🅿️' : '✈️'}</div>
+      <div class="fr-main">
+        <div class="fr-call">${call}</div>
+        <div class="fr-route">${route}</div>
+        <div class="fr-status ${status}">${statusLbl}</div>
+      </div>
+      <div class="fr-meta">
+        <div class="fr-alt">${alt}</div>
+        <div class="fr-spd">${spd}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterFlights() { renderFlights(); }
+
+/* ── RENDER TABLE (départs/arrivées simulés) ── */
+function renderTable() {
+  const ap = AIRPORTS[curAirport];
+  const airports = [
+    {code:'CDG',city:'Paris CDG'},{code:'LHR',city:'London'},{code:'MAD',city:'Madrid'},
+    {code:'AMS',city:'Amsterdam'},{code:'FRA',city:'Frankfurt'},{code:'BCN',city:'Barcelona'},
+    {code:'FCO',city:'Rome'},{code:'DXB',city:'Dubai'},{code:'JFK',city:'New York'},
+    {code:'IST',city:'Istanbul'},{code:'MUC',city:'Munich'},{code:'ZRH',city:'Zurich'},
+    {code:'LIS',city:'Lisbonne'},{code:'ATH',city:'Athènes'},{code:'VIE',city:'Vienne'},
+  ];
+  const airlines = [
+    ['AF','Air France'],['EZY','easyJet'],['VLG','Vueling'],['IBE','Iberia'],
+    ['KL','KLM'],['LH','Lufthansa'],['BA','British Airways'],['FR','Ryanair'],
+    ['TK','Turkish'],['U2','easyJet'],['TP','TAP'],['AZ','ITA Airways'],
+  ];
+  const statuses = [
+    {k:'dep',l:'À L\'HEURE'},{k:'dep',l:'EMBARQUEMENT'},{k:'brd',l:'EMBARQUEMENT'},
+    {k:'dep',l:'À L\'HEURE'},{k:'del',l:'RETARDÉ'},{k:'dep',l:'DÉCOLLÉ'},
+    {k:'arr',l:'ATTERRI'},{k:'arr',l:'À L\'HEURE'},
+  ];
+
+  const now = new Date();
+
+  function makeRows(isDep, count=12) {
+    return Array.from({length:count}, (_,i) => {
+      const dt = new Date(now.getTime() + (isDep?1:-1) * (i*18+Math.floor(Math.random()*12)) * 60000);
+      const hh = dt.getHours().toString().padStart(2,'0');
+      const mm = dt.getMinutes().toString().padStart(2,'0');
+      const apt = airports[Math.floor(Math.random()*airports.length)];
+      const al  = airlines[Math.floor(Math.random()*airlines.length)];
+      const num = Math.floor(100+Math.random()*9900);
+      const st  = statuses[Math.floor(Math.random()*statuses.length)];
+      return {time:`${hh}:${mm}`, city:apt.city, code:`${al[0]}${num}`, airline:al[1], status:st};
+    }).sort((a,b)=>a.time.localeCompare(b.time));
+  }
+
+  const deps = makeRows(true);
+  const arrs = makeRows(false);
+
+  document.getElementById('depList').innerHTML = deps.map(r => `
+    <div class="at-row">
+      <div class="at-cell sky" style="flex:1.2">${r.code}</div>
+      <div class="at-cell" style="flex:1.8;font-size:10px">${r.city}</div>
+      <div class="at-cell" style="flex:.9;text-align:right">${r.time}</div>
+      <div class="at-cell" style="flex:1;text-align:right"><span class="at-badge ${r.status.k}">${r.status.l}</span></div>
+    </div>`).join('');
+
+  document.getElementById('arrList').innerHTML = arrs.map(r => `
+    <div class="at-row">
+      <div class="at-cell sky" style="flex:1.2">${r.code}</div>
+      <div class="at-cell" style="flex:1.8;font-size:10px">${r.city}</div>
+      <div class="at-cell" style="flex:.9;text-align:right">${r.time}</div>
+      <div class="at-cell" style="flex:1;text-align:right"><span class="at-badge ${r.status.k}">${r.status.l}</span></div>
+    </div>`).join('');
+}
+
+/* ── STATS ── */
+function updateStats() {
+  const n = allFlights.length;
+  document.getElementById('statFlights').textContent = n;
+  if (!n) return;
+  const alts = allFlights.filter(f=>f[7]).map(f=>Math.round(f[7]/0.3048));
+  const spds = allFlights.filter(f=>f[9]).map(f=>Math.round(f[9]*1.944));
+  const avgAlt = alts.length ? Math.round(alts.reduce((a,b)=>a+b,0)/alts.length).toLocaleString()+'ft' : '—';
+  const avgSpd = spds.length ? Math.round(spds.reduce((a,b)=>a+b,0)/spds.length)+'kt' : '—';
+  document.getElementById('statAlt').textContent = avgAlt;
+  document.getElementById('statSpd').textContent = avgSpd;
+}
+
+/* ── PLANE MARKERS ── */
+function updatePlaneMarkers() {
+  // Clear old
+  Object.values(planeMarkers).forEach(m => m.remove());
+  planeMarkers = {};
+
+  allFlights.forEach(f => {
+    if (!f[5] || !f[6]) return;
+    const call = (f[0]||'').trim() || 'N/A';
+    const hdg  = f[10] || 0;
+    const gnd  = f[8];
+    const isSel = selFlight === call;
+
+    const icon = L.divIcon({
+      className: '',
+      html: `<div class="plane-icon${isSel?' sel':''}" style="transform:rotate(${hdg}deg)">${gnd?'🟡':'✈'}</div>`,
+      iconSize: [22,22],
+      iconAnchor: [11,11]
+    });
+
+    const m = L.marker([f[6], f[5]], {icon, zIndexOffset: isSel?1000:0}).addTo(mapObj);
+
+    const alt = f[7] ? Math.round(f[7]/0.3048).toLocaleString()+' ft' : '—';
+    const spd = f[9] ? Math.round(f[9]*1.944)+' kt' : '—';
+    const hdgFmt = Math.round(hdg)+'°';
+    const vRate = f[11] ? (f[11]>0?'▲ ':'▼ ')+Math.abs(Math.round(f[11]*196.85))+' fpm' : '—';
+    const origin = f[17]||'';
+    const dest   = f[18]||'';
+    const type   = f[19]||'';
+
+    m.bindPopup(`
+      <div class="fp">
+        <div class="fp-head">
+          <div class="fp-call">${call}</div>
+          <div class="fp-airline">${type} · ${origin||'?'} → ${dest||'?'}</div>
+        </div>
+        <div class="fp-body">
+          <div class="fp-row"><span class="fp-lbl">Altitude</span><span class="fp-val hi">${alt}</span></div>
+          <div class="fp-row"><span class="fp-lbl">Vitesse</span><span class="fp-val">${spd}</span></div>
+          <div class="fp-row"><span class="fp-lbl">Cap</span><span class="fp-val">${hdgFmt}</span></div>
+          <div class="fp-row"><span class="fp-lbl">Vario</span><span class="fp-val">${vRate}</span></div>
+          <div class="fp-row"><span class="fp-lbl">Statut</span><span class="fp-val">${gnd?'Au sol':'En vol'}</span></div>
+        </div>
+      </div>`, {maxWidth:240,minWidth:232});
+
+    m.on('click', () => selectFlight(call, f[6], f[5]));
+    planeMarkers[call] = m;
+  });
+}
+
+/* ── SELECT FLIGHT ── */
+function selectFlight(call, lat, lng) {
+  selFlight = call;
+  if (mapObj && lat && lng) {
+    mapObj.flyTo([lat, lng], Math.max(mapObj.getZoom(), 10), {duration: .8});
+    if (planeMarkers[call]) planeMarkers[call].openPopup();
+  }
+  renderFlights();
+  // Scroll to selected row
+  setTimeout(() => {
+    const rows = document.querySelectorAll('.fr');
+    rows.forEach(r => { if (r.textContent.includes(call)) r.scrollIntoView({behavior:'smooth',block:'nearest'}); });
+  }, 100);
+}
+
+/* ── TABS ── */
+function switchTab(tab) {
+  curTab = tab;
+  ['radar','dep','arr'].forEach(t => {
+    document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('on', t===tab);
+    const pane = t==='radar'?'paneRadar':t==='dep'?'paneDep':'paneArr';
+    document.getElementById(pane).style.display = t===tab?'block':'none';
+  });
+}
+
+/* ── AIRPORT CHANGE ── */
+function onAirportChange() {
+  curAirport = document.getElementById('airportSel').value;
+  const ap = AIRPORTS[curAirport];
+  if (mapObj) mapObj.flyTo([ap.lat, ap.lng], ap.zoom, {duration:1});
+  Object.values(planeMarkers).forEach(m=>m.remove());
+  planeMarkers={};allFlights=[];selFlight=null;
+  document.getElementById('flightList').innerHTML='<div class="loading"><div class="ld-ring"></div><div class="ld-txt">CONNEXION...</div></div>';
+  clearTimeout(refreshTimer);
+  setTimeout(loadFlights, 600);
+}
+
+/* ── INIT ── */
+window.addEventListener('load', () => {
+  const ap = AIRPORTS[curAirport];
+  initMap(ap);
+  loadFlights();
+  // Auto-refresh toutes les 30s
+  refreshTimer = setInterval(loadFlights, 30000);
+});
+</script>
+</body>
+</html>
