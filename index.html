@@ -482,7 +482,7 @@ const AIRPORTS={
 };
 
 /* ── STATE ── */
-let curApt='LFML', mapObj=null, markers={}, flights=[], selCall=null, curTab='map', aptTab='dep', refreshInt=null;
+let curApt='LFML', mapObj=null, markers={}, flights=[], selCall=null, curTab='map', aptTab='dep', refreshInt=null, isLive=false;
 
 /* ── MAP ── */
 function initMap(ap){
@@ -516,16 +516,70 @@ function planeIcon(hdg,sel,grnd){
 async function loadFlights(){
   const ap=AIRPORTS[curApt];
   const d=2.8;
-  const url=`https://opensky-network.org/api/states/all?lamin=${ap.lat-d}&lomin=${ap.lng-d}&lamax=${ap.lat+d}&lomax=${ap.lng+d}`;
-  try{
-    const r=await fetch(url);if(!r.ok)throw new Error();
-    const data=await r.json();
-    flights=(data.states||[]).filter(f=>f[5]&&f[6]);
-    if(!flights.length)throw new Error('empty');
-  }catch{
-    flights=demoFlights(ap);
+  const lamin=ap.lat-d,lamax=ap.lat+d,lomin=ap.lng-d,lomax=ap.lng+d;
+
+  // Sources à essayer dans l'ordre
+  const sources=[
+    // OpenSky direct
+    `https://opensky-network.org/api/states/all?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`,
+    // Via proxy CORS public
+    `https://api.allorigins.win/get?url=${encodeURIComponent(`https://opensky-network.org/api/states/all?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`)}`,
+    // CORS proxy alternatif
+    `https://corsproxy.io/?${encodeURIComponent(`https://opensky-network.org/api/states/all?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`)}`,
+  ];
+
+  for(const src of sources){
+    try{
+      const r=await fetch(src,{signal:AbortSignal.timeout(8000)});
+      if(!r.ok)continue;
+      let data=await r.json();
+      // allorigins wrappe dans {contents: "..."}
+      if(data.contents)data=JSON.parse(data.contents);
+      const states=(data.states||[]).filter(f=>f[5]&&f[6]);
+      if(states.length>0){
+        flights=states;
+        isLive=true;
+        updateLiveBadge(true);
+        renderMap();renderList();updateStats();
+        return;
+      }
+    }catch(e){ continue; }
   }
+  // Toutes les sources ont échoué → démo dynamique
+  isLive=false;
+  updateLiveBadge(false);
+  if(!flights.length)flights=demoFlights(ap);
+  else animateDemoFlights(); // bouge les avions existants
   renderMap();renderList();updateStats();
+}
+
+function updateLiveBadge(live){
+  const dot=document.querySelector('.live-dot');
+  const txt=document.querySelector('.live-txt');
+  if(!dot||!txt)return;
+  if(live){
+    dot.style.background='var(--grn)';dot.style.boxShadow='0 0 6px var(--grn)';
+    txt.style.color='var(--grn)';txt.textContent='EN DIRECT';
+  }else{
+    dot.style.background='var(--amber)';dot.style.boxShadow='0 0 6px var(--amber)';
+    txt.style.color='var(--amber)';txt.textContent='SIMULATION';
+  }
+}
+
+// Anime les avions démo entre les refreshs
+function animateDemoFlights(){
+  flights=flights.map(f=>{
+    if(!f[5]||!f[6])return f;
+    const hdg=(f[10]||0)*Math.PI/180;
+    const spd=(f[9]||150)/111320; // degrés/s approx
+    const dt=30; // secondes
+    const dlat=Math.cos(hdg)*spd*dt;
+    const dlng=Math.sin(hdg)*spd*dt/Math.cos(f[6]*Math.PI/180);
+    const nf=[...f];
+    nf[6]=f[6]+dlat;
+    nf[5]=f[5]+dlng;
+    return nf;
+  });
 }
 
 async function refreshFlights(){
@@ -821,7 +875,7 @@ window.addEventListener('load',()=>{
   const ap=AIRPORTS[curApt];
   initMap(ap);
   loadFlights();
-  refreshInt=setInterval(loadFlights,30000);
+  refreshInt=setInterval(loadFlights,15000);
   // Top search
   document.getElementById('topSearch').addEventListener('keydown',e=>{
     if(e.key==='Enter'){
