@@ -381,7 +381,9 @@ async function loadFlights() {
         (parseFloat(a.baro_rate)||0) / 196.85,
         null, null,
         (parseFloat(a.alt_geom||a.alt_baro)||0) * 0.3048,
-        a.squawk||'', false, 0, '', '', a.t||''
+        String(a.squawk||'').split('.')[0], false, 0,
+        a.from_long||a.dep||'', a.to_long||a.arr||'',
+        a.t||a.desc||a.type||''
       ]);
     } else if (data.states) {
       flights = data.states.filter(f => f[5] && f[6]);
@@ -540,7 +542,7 @@ function renderList() {
     const gnd = f[8], sel = selCall===call;
     return `<div class="vrow${sel?' hi':''}" onclick="openFlight('${call}',null)">
       <div class="vr-plane">${gnd?'🟡':'✈'}</div>
-      <div class="vr-main"><div class="vr-call">${call}</div><div class="vr-route">${f[19]||'—'}</div></div>
+      <div class="vr-main"><div class="vr-call">${call}</div><div class="vr-route">${f[19]||''} ${f[17]?'→ '+f[18]:''}</div></div>
       <div class="vr-right"><div class="vr-alt">${alt}</div><div class="vr-spd">${spd}</div><div class="vr-dot ${gnd?'gnd':'ok'}"></div></div>
     </div>`;
   }).join('');
@@ -560,8 +562,8 @@ function openFlight(call, fdata) {
 
   // Route bar
   const from = f[17] || '???', to = f[18] || '???';
-  document.getElementById('rbFrom').textContent = from;
-  document.getElementById('rbTo').textContent = to;
+  document.getElementById('rbFrom').textContent = (from && from!=='???') ? from : '—';
+  document.getElementById('rbTo').textContent = (to && to!=='???') ? to : '—';
   document.getElementById('rbCall').textContent = call;
   document.getElementById('routeBar').classList.add('show');
 
@@ -575,16 +577,19 @@ function openFlight(call, fdata) {
   document.getElementById('fshCall').childNodes[0].nodeValue = call+' ';
   document.getElementById('fshBadge').textContent = gnd ? 'AU SOL' : 'EN VOL';
   document.getElementById('fshBadge').className = 'fsh-badge '+(gnd?'sol':'vol');
-  document.getElementById('fshFrom').textContent = from;
-  document.getElementById('fshTo').textContent = to;
-  document.getElementById('fshAirline').textContent = f[19] || '—';
+  document.getElementById('fshFrom').textContent = (from && from!=='???') ? from : 'Non dispo';
+  document.getElementById('fshTo').textContent = (to && to!=='???') ? to : 'Non dispo';
+  const alCode2 = getAirlineCode(call);
+  const alName = alCode2 ? AIRLINE_MAP[alCode2]?.name : null;
+  const typeStr = f[19] || '';
+  document.getElementById('fshAirline').textContent = [alName, typeStr].filter(Boolean).join(' · ') || '—';
   document.getElementById('fshAlt').textContent = alt;
   document.getElementById('fshSpd').textContent = spd;
   document.getElementById('fshHdg').textContent = hdg;
   document.getElementById('fshVrate').textContent = vr;
-  document.getElementById('fshType').textContent = f[19] || '—';
-  document.getElementById('fshSqk').textContent = f[14] || '—';
-  document.getElementById('fshIcao').textContent = (f[1]||'—').trim();
+  document.getElementById('fshType').textContent = f[19] || 'N/A';
+  document.getElementById('fshSqk').textContent = f[14] ? String(f[14]).split('.')[0].padStart(4,'0') : '—';
+  document.getElementById('fshIcao').textContent = (f[1]||'').trim().toUpperCase() || '—';
   document.getElementById('fshPos').textContent = f[6] ? `${parseFloat(f[6]).toFixed(4)}° / ${parseFloat(f[5]).toFixed(4)}°` : '—';
 
   // Fetch plane photo
