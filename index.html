@@ -1,66 +1,875 @@
-export const config = { runtime: 'edge' };
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SkyView</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{
+  --bg:#F0F4F8;--panel:#FFF;--panel2:#F5F7FA;
+  --border:#E2E8F0;--border2:#CBD5E1;
+  --sky:#1565C0;--sky2:#1976D2;
+  --grn:#2E7D32;--amber:#F57F17;--red:#C62828;
+  --txt:#1A202C;--txt2:#4A5568;--txt3:#A0AEC0;
+  --plane:#E53935;--plane-sel:#1565C0;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:'IBM Plex Sans',sans-serif;color:var(--txt);background:var(--bg)}
 
-export default async function handler(req) {
-  const url = new URL(req.url);
-  const lat  = url.searchParams.get('lat')      || '43.44';
-  const lon  = url.searchParams.get('lon')      || '5.22';
-  const dist = url.searchParams.get('dist')     || '150';
-  const cs   = url.searchParams.get('callsign') || '';   // lookup d'un seul vol
+/* MAP plein écran */
+#map{position:fixed;inset:0;z-index:0}
 
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Content-Type': 'application/json',
-    'Cache-Control': 's-maxage=8',
-  };
+/* Leaflet overrides */
+.leaflet-control-zoom{border:none!important;border-radius:8px!important;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.15)!important;margin-right:12px!important;margin-bottom:80px!important}
+.leaflet-control-zoom a{background:rgba(255,255,255,.95)!important;color:var(--sky)!important;font-size:16px!important;line-height:30px!important;width:30px!important;height:30px!important;border:none!important;border-bottom:1px solid var(--border)!important}
+.leaflet-popup-content-wrapper{padding:0!important;border-radius:12px!important;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.16)!important;border:1px solid var(--border2)!important;background:var(--panel)!important}
+.leaflet-popup-content{margin:0!important;width:230px!important}
+.leaflet-popup-tip-container{display:none!important}
+.leaflet-control-attribution{display:none!important}
 
-  // ── MODE CALLSIGN : enrichissement d'un seul vol ──
-  if (cs) {
-    try {
-      const r = await fetch(`https://api.adsb.lol/v2/callsign/${cs.trim()}`, {
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-        signal: AbortSignal.timeout(5000),
-      });
-      if (r.ok) {
-        const data = await r.json();
-        const info = Array.isArray(data.ac) ? data.ac[0] : data.ac || {};
-        return new Response(JSON.stringify({
-          ok: true,
-          dep:       info.dep       || info.from      || '',
-          arr:       info.arr       || info.to        || '',
-          from_long: info.from_long || info.origin    || '',
-          to_long:   info.to_long   || info.dest      || '',
-          airline:   info.airline   || '',
-          type:      info.t         || info.type      || '',
-        }), { headers });
-      }
-    } catch(e) {}
-    return new Response(JSON.stringify({ ok: false }), { headers });
+/* TOP BAR */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:500;height:52px;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 12px;box-shadow:0 1px 8px rgba(0,0,0,.07)}
+.tb-logo{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--sky);display:flex;align-items:center;gap:7px;flex-shrink:0;letter-spacing:.04em}
+.tb-logo-plane{font-size:16px;animation:fly 3s ease-in-out infinite}
+@keyframes fly{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.tb-search{flex:1;display:flex;align-items:center;gap:8px;background:#F5F7FA;border:1px solid var(--border2);border-radius:22px;padding:7px 14px}
+.tb-search input{background:none;border:none;outline:none;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:var(--txt);width:100%}
+.tb-search input::placeholder{color:var(--txt3)}
+.tb-btn{width:32px;height:32px;border-radius:50%;background:#F5F7FA;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;color:var(--txt2);transition:.15s;flex-shrink:0}
+.tb-btn.spinning{animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ROUTE BAR — apparaît au clic d'un avion */
+.route-bar{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:450;background:rgba(255,255,255,.97);border:1px solid var(--border2);border-radius:50px;padding:7px 18px;backdrop-filter:blur(10px);box-shadow:0 3px 14px rgba(0,0,0,.13);display:none;align-items:center;gap:10px;white-space:nowrap;font-size:12px}
+.route-bar.show{display:flex}
+.rb-apt{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--sky)}
+.rb-arrow{color:var(--txt3)}
+.rb-call{font-size:11px;color:var(--txt2);font-family:'IBM Plex Mono',monospace}
+.rb-close{cursor:pointer;color:var(--txt3);font-size:16px;line-height:1}
+
+/* COUNTER */
+.counter{position:fixed;top:62px;left:12px;z-index:400;background:rgba(255,255,255,.9);border:1px solid var(--border2);border-radius:8px;padding:5px 10px;backdrop-filter:blur(8px);display:flex;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.cv{text-align:center}
+.cv-v{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--sky)}
+.cv-l{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
+
+/* AIRPORT SELECT */
+.apt-sel{position:fixed;top:62px;right:12px;z-index:400;background:rgba(255,255,255,.9);border:1px solid var(--border2);border-radius:8px;backdrop-filter:blur(8px);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.apt-sel select{background:transparent;border:none;outline:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sky);padding:7px 10px;cursor:pointer;-webkit-appearance:none}
+
+
+/* RAYON SLIDER */
+.radius-ctrl{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 68px);right:12px;z-index:400;
+  background:rgba(255,255,255,.92);border:1px solid var(--border2);border-radius:10px;
+  padding:8px 12px;backdrop-filter:blur(8px);box-shadow:0 2px 8px rgba(0,0,0,.08);
+  display:flex;flex-direction:column;align-items:center;gap:4px;min-width:80px}
+.rc-val{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:var(--sky);text-align:center}
+.rc-lbl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em}
+.rc-slider{width:64px;accent-color:var(--sky);cursor:pointer}
+
+/* LIVE BADGE */
+.live-badge{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 68px);left:12px;z-index:400;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.9);border:1px solid rgba(46,125,50,.3);border-radius:50px;padding:5px 12px;backdrop-filter:blur(8px);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--grn);box-shadow:0 0 6px var(--grn);animation:blink 1.2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.live-txt{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:var(--grn);letter-spacing:.08em}
+
+/* BOTTOM TABS */
+.bottom-tabs{position:fixed;bottom:0;left:0;right:0;z-index:500;height:58px;background:rgba(255,255,255,.96);backdrop-filter:blur(16px);border-top:1px solid var(--border);display:flex;align-items:center;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -1px 8px rgba(0,0,0,.06)}
+.btab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 0;transition:.15s}
+.btab-ico{font-size:19px;line-height:1}
+.btab-lbl{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3)}
+.btab.on .btab-lbl{color:var(--sky)}
+
+/* FLIGHT DETAIL SHEET */
+.fov{position:fixed;inset:0;z-index:600;pointer-events:none;transition:background .3s}
+.fov.show{pointer-events:all;background:rgba(0,0,0,.2)}
+.fsheet{position:fixed;left:0;right:0;bottom:0;z-index:700;background:var(--panel);border-radius:18px 18px 0 0;border-top:1px solid var(--border2);transform:translateY(100%);transition:transform .4s cubic-bezier(.4,0,.2,1);max-height:90dvh;display:flex;flex-direction:column;box-shadow:0 -6px 32px rgba(0,0,0,.16)}
+.fsheet.show{transform:translateY(0)}
+.fsh-handle{padding:10px 0 6px;display:flex;justify-content:center;flex-shrink:0}
+.fsh-hbar{width:36px;height:4px;border-radius:2px;background:var(--border2)}
+.fsh-close{position:absolute;top:14px;right:14px;z-index:10;width:28px;height:28px;border-radius:50%;background:var(--panel2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--txt3);cursor:pointer}
+.fsh-photo{width:100%;height:160px;position:relative;overflow:hidden;background:#EBF4FF;flex-shrink:0}
+.fsh-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.fsh-photo-fb{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#EBF4FF,#F0F4F8)}
+.fsh-photo-fb-ico{font-size:48px}
+.fsh-photo-fb-txt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--txt3);letter-spacing:.06em}
+.fsh-photo-airline{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.92);border-radius:8px;padding:5px 10px;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--txt);backdrop-filter:blur(4px)}
+.fsh-photo-credit{position:absolute;bottom:6px;right:8px;font-size:9px;color:rgba(255,255,255,.8);background:rgba(0,0,0,.35);padding:2px 7px;border-radius:4px}
+.fsh-toprow{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 2px;flex-shrink:0;position:relative}
+.fsh-callsign{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--sky)}
+.fsh-badges{display:flex;gap:6px;align-items:center}
+.fsh-badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:5px;letter-spacing:.06em}
+.fsh-badge.vol{background:rgba(21,101,192,.12);color:var(--sky)}
+.fsh-badge.sol{background:rgba(245,127,23,.12);color:var(--amber)}
+.fsh-badge.type{background:var(--panel2);color:var(--txt2);border:1px solid var(--border2)}
+.fsh-airline-row{font-size:12px;color:var(--txt2);padding:0 16px 10px;flex-shrink:0}
+.fsh-route-block{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 16px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-shrink:0;background:var(--panel)}
+.fsh-apt{flex:1}
+.fsh-apt-code{font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:700;color:var(--txt);line-height:1;margin-bottom:3px}
+.fsh-apt-name{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em}
+.fsh-apt-time{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--txt2);margin-top:5px}
+.fsh-apt-time span{font-size:10px;color:var(--txt3);margin-right:3px}
+.fsh-progress{flex:1.4;display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 10px}
+.fsh-prog-bar{position:relative;width:100%;height:3px;background:var(--border2);border-radius:2px}
+.fsh-prog-fill{height:100%;background:linear-gradient(90deg,var(--sky2),var(--sky));border-radius:2px;transition:width .5s}
+.fsh-prog-plane{position:absolute;top:50%;transform:translate(-50%,-50%);font-size:15px;transition:left .5s}
+.fsh-prog-labels{display:flex;justify-content:space-between;width:100%;font-size:9px;color:var(--txt3);font-family:'IBM Plex Mono',monospace;letter-spacing:.04em}
+.fsh-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.fsh-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
+.fsh-cell{background:var(--panel2);padding:12px 10px;text-align:center}
+.fsh-cell-v{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--txt);margin-bottom:3px}
+.fsh-cell-v.hi{color:var(--sky)}
+.fsh-cell-l{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em}
+.fsh-info-list{padding:0 16px 24px}
+.fsh-info-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)}
+.fsh-info-row:last-child{border-bottom:none}
+.fsh-info-l{font-size:12px;color:var(--txt2)}
+.fsh-info-v{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--txt)}
+
+
+/* FLIGHTS LIST PANEL */
+.flpanel{position:fixed;left:0;right:0;bottom:0;z-index:550;background:var(--panel);border-radius:16px 16px 0 0;border-top:1px solid var(--border2);transform:translateY(100%);transition:transform .38s cubic-bezier(.4,0,.2,1);height:75dvh;display:flex;flex-direction:column;box-shadow:0 -4px 24px rgba(0,0,0,.1)}
+.flpanel.show{transform:translateY(0)}
+.flp-head{padding:14px 16px 10px;flex-shrink:0;border-bottom:1px solid var(--border)}
+.flp-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.flp-title{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:var(--txt)}
+.flp-close{font-size:18px;color:var(--txt3);cursor:pointer}
+.flp-search{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border2);border-radius:8px;padding:8px 12px}
+.flp-search input{background:none;border:none;outline:none;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:var(--txt);width:100%}
+.flp-search input::placeholder{color:var(--txt3)}
+.flp-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none}
+.flp-list::-webkit-scrollbar{display:none}
+.vrow{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:.12s}
+.vrow:active,.vrow.hi{background:rgba(21,101,192,.07)}
+.vrow.hi{border-left:3px solid var(--sky)}
+.vr-plane{font-size:14px;flex-shrink:0;width:22px;text-align:center}
+.vr-main{flex:1;min-width:0}
+.vr-call{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--sky);margin-bottom:1px}
+.vr-route{font-size:11px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vr-right{text-align:right;flex-shrink:0}
+.vr-alt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--txt);margin-bottom:1px}
+.vr-spd{font-size:10px;color:var(--txt3)}
+.vr-dot{width:7px;height:7px;border-radius:50%;margin-left:auto;margin-top:4px}
+.vr-dot.ok{background:var(--grn)}
+.vr-dot.gnd{background:var(--amber)}
+
+/* AIRPORT PANEL */
+.aptpanel{position:fixed;left:0;right:0;bottom:0;z-index:550;background:var(--panel);border-radius:16px 16px 0 0;border-top:1px solid var(--border2);transform:translateY(100%);transition:transform .38s cubic-bezier(.4,0,.2,1);height:75dvh;display:flex;flex-direction:column;box-shadow:0 -4px 24px rgba(0,0,0,.1)}
+.aptpanel.show{transform:translateY(0)}
+.aptp-head{padding:14px 16px 0;flex-shrink:0;position:relative}
+.aptp-name{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--sky);margin-bottom:2px}
+.aptp-iata{font-size:11px;color:var(--txt2);margin-bottom:10px}
+.aptp-tabs{display:flex;border-bottom:1px solid var(--border)}
+.aptp-tab{flex:1;text-align:center;padding:8px 0;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);cursor:pointer;border-bottom:2px solid transparent;transition:.15s;position:relative;top:1px}
+.aptp-tab.on{color:var(--sky);border-bottom-color:var(--sky)}
+.aptp-close{position:absolute;top:14px;right:16px;font-size:18px;color:var(--txt3);cursor:pointer}
+.aptp-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none}
+.aptp-body::-webkit-scrollbar{display:none}
+.ft-head{display:flex;padding:7px 14px;background:var(--panel2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2}
+.ft-hc{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3)}
+.ft-row{display:flex;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:.12s}
+.ft-row:active{background:rgba(21,101,192,.06)}
+.ft-c{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--txt)}
+.ft-c.dim{color:var(--txt2);font-size:10px;font-family:'IBM Plex Sans',sans-serif}
+.ft-c.sky{color:var(--sky)}
+.st{font-size:9px;font-weight:700;letter-spacing:.05em;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.st-ok{background:rgba(46,125,50,.12);color:var(--grn)}
+.st-brd{background:rgba(245,127,23,.12);color:var(--amber)}
+.st-del{background:rgba(198,40,40,.12);color:var(--red)}
+.st-dep{background:rgba(21,101,192,.12);color:var(--sky)}
+.st-arr{background:rgba(46,125,50,.12);color:var(--grn)}
+
+/* Loading */
+.ld{text-align:center;padding:36px 16px}
+.ld-ring{width:28px;height:28px;border:2px solid var(--border2);border-top-color:var(--sky);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+.ld-txt{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--txt3);letter-spacing:.08em}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="tb-logo"><span class="tb-logo-plane">✈</span>SKYVIEW</div>
+  <div class="tb-search">
+    <span style="color:var(--txt3);font-size:14px">🔍</span>
+    <input type="text" id="topSearch" placeholder="Numéro de vol...">
+  </div>
+  <div class="tb-btn" id="btnRefresh" onclick="refreshFlights()">🔄</div>
+</div>
+
+<!-- ROUTE BAR -->
+<div class="route-bar" id="routeBar">
+  <span class="rb-apt" id="rbFrom">—</span>
+  <span class="rb-arrow">━━▶</span>
+  <span class="rb-apt" id="rbTo">—</span>
+  <span style="color:var(--border2)">│</span>
+  <span class="rb-call" id="rbCall">—</span>
+  <span class="rb-close" onclick="clearRoute()">✕</span>
+</div>
+
+<!-- COUNTER -->
+<div class="counter">
+  <div class="cv"><div class="cv-v" id="cvFlights">—</div><div class="cv-l">Vols</div></div>
+  <div class="cv"><div class="cv-v" id="cvAlt">—</div><div class="cv-l">Alt moy</div></div>
+  <div class="cv"><div class="cv-v" id="cvSpd">—</div><div class="cv-l">Kts moy</div></div>
+</div>
+
+<!-- AIRPORT SELECT -->
+<div class="apt-sel">
+  <select id="aptSel" onchange="changeAirport()">
+    <option value="LFML">MRS — Marseille</option>
+    <option value="LFPG">CDG — Paris</option>
+    <option value="LFMN">NCE — Nice</option>
+    <option value="LFLY">LYS — Lyon</option>
+    <option value="LEMD">MAD — Madrid</option>
+    <option value="EGLL">LHR — London</option>
+    <option value="EHAM">AMS — Amsterdam</option>
+    <option value="EDDF">FRA — Frankfurt</option>
+  </select>
+</div>
+
+<!-- RADIUS CONTROL -->
+<div class="radius-ctrl">
+  <div class="rc-val"><span id="rcVal">150</span> nm</div>
+  <input class="rc-slider" type="range" id="rcSlider" min="50" max="400" step="25" value="150"
+    oninput="document.getElementById('rcVal').textContent=this.value;onRadiusChange(this.value)">
+  <div class="rc-lbl">Rayon</div>
+</div>
+
+<!-- LIVE BADGE -->
+<div class="live-badge">
+  <div class="live-dot" id="liveDot"></div>
+  <div class="live-txt" id="liveTxt">EN DIRECT</div>
+</div>
+
+<!-- BOTTOM TABS -->
+<div class="bottom-tabs">
+  <div class="btab on" id="btMap" onclick="switchTab('map')"><div class="btab-ico">🗺️</div><div class="btab-lbl">Carte</div></div>
+  <div class="btab" id="btFlights" onclick="switchTab('flights')"><div class="btab-ico">✈️</div><div class="btab-lbl">Vols</div></div>
+  <div class="btab" id="btAirport" onclick="switchTab('airport')"><div class="btab-ico">🏛️</div><div class="btab-lbl">Aéroport</div></div>
+</div>
+
+<!-- FLIGHT DETAIL SHEET -->
+<div class="fov" id="fov" onclick="closeFSheet()"></div>
+<div class="fsheet" id="fsheet">
+  <div class="fsh-handle"><div class="fsh-hbar"></div></div>
+  <div class="fsh-close" onclick="closeFSheet()">✕</div>
+
+  <!-- Photo avion -->
+  <div class="fsh-photo" id="fshPhoto">
+    <div class="fsh-photo-fb"><div class="fsh-photo-fb-ico">✈️</div><div class="fsh-photo-fb-txt">CHARGEMENT...</div></div>
+  </div>
+
+  <!-- Callsign + badges -->
+  <div class="fsh-toprow">
+    <div class="fsh-callsign" id="fshCall">—</div>
+    <div class="fsh-badges">
+      <span class="fsh-badge type" id="fshType">—</span>
+      <span class="fsh-badge vol" id="fshBadge">EN VOL</span>
+    </div>
+  </div>
+  <div class="fsh-airline-row" id="fshAirline">—</div>
+
+  <!-- Grande route IATA style FR24 -->
+  <div class="fsh-route-block">
+    <div class="fsh-apt">
+      <div class="fsh-apt-code" id="fshFrom">—</div>
+      <div class="fsh-apt-name" id="fshFromName">Départ</div>
+      <div class="fsh-apt-time"><span>SCH</span> <span id="fshDepTime">—</span></div>
+    </div>
+    <div class="fsh-progress">
+      <div class="fsh-prog-bar">
+        <div class="fsh-prog-fill" id="fshProgFill" style="width:45%"></div>
+        <div class="fsh-prog-plane" id="fshProgPlane" style="left:45%">✈</div>
+      </div>
+      <div class="fsh-prog-labels">
+        <span id="fshDist">—</span>
+        <span id="fshEta">—</span>
+      </div>
+    </div>
+    <div class="fsh-apt" style="text-align:right">
+      <div class="fsh-apt-code" id="fshTo">—</div>
+      <div class="fsh-apt-name" id="fshToName">Arrivée</div>
+      <div class="fsh-apt-time"><span>EST</span> <span id="fshArrTime">—</span></div>
+    </div>
+  </div>
+
+  <!-- Scroll -->
+  <div class="fsh-scroll">
+    <!-- Data grid -->
+    <div class="fsh-grid">
+      <div class="fsh-cell"><div class="fsh-cell-v hi" id="fshAlt">—</div><div class="fsh-cell-l">Altitude</div></div>
+      <div class="fsh-cell"><div class="fsh-cell-v" id="fshSpd">—</div><div class="fsh-cell-l">Vitesse</div></div>
+      <div class="fsh-cell"><div class="fsh-cell-v" id="fshHdg">—</div><div class="fsh-cell-l">Cap</div></div>
+      <div class="fsh-cell"><div class="fsh-cell-v" id="fshVrate">—</div><div class="fsh-cell-l">Vario</div></div>
+      <div class="fsh-cell"><div class="fsh-cell-v" id="fshMach">—</div><div class="fsh-cell-l">Mach</div></div>
+      <div class="fsh-cell"><div class="fsh-cell-v" id="fshSqk">—</div><div class="fsh-cell-l">Squawk</div></div>
+    </div>
+    <!-- Extra infos -->
+    <div class="fsh-info-list">
+      <div class="fsh-info-row"><div class="fsh-info-l">Immatriculation</div><div class="fsh-info-v" id="fshIcao">—</div></div>
+      <div class="fsh-info-row"><div class="fsh-info-l">Position GPS</div><div class="fsh-info-v" id="fshPos">—</div></div>
+      <div class="fsh-info-row"><div class="fsh-info-l">Source données</div><div class="fsh-info-v">ADS-B · adsb.lol</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- FLIGHTS LIST -->
+<div class="flpanel" id="flpanel">
+  <div class="flp-head">
+    <div class="flp-top"><div class="flp-title" id="flpTitle">VOLS EN DIRECT</div><div class="flp-close" onclick="switchTab('map')">✕</div></div>
+    <div class="flp-search"><span style="color:var(--txt3)">🔍</span><input type="text" id="flSearch" placeholder="Rechercher..." oninput="renderList()"></div>
+  </div>
+  <div class="flp-list" id="flpList"><div class="ld"><div class="ld-ring"></div><div class="ld-txt">CHARGEMENT...</div></div></div>
+</div>
+
+<!-- AIRPORT PANEL -->
+<div class="aptpanel" id="aptpanel">
+  <div class="aptp-head">
+    <div class="aptp-name" id="aptName">Marseille Provence</div>
+    <div class="aptp-iata" id="aptIata">MRS · LFML · France</div>
+    <div class="aptp-tabs">
+      <div class="aptp-tab on" id="atDep" onclick="switchAptTab('dep')">↑ Départs</div>
+      <div class="aptp-tab" id="atArr" onclick="switchAptTab('arr')">↓ Arrivées</div>
+    </div>
+    <div class="aptp-close" onclick="switchTab('map')">✕</div>
+  </div>
+  <div class="aptp-body">
+    <div class="ft-head">
+      <div class="ft-hc" style="flex:1.2">Vol</div>
+      <div class="ft-hc" style="flex:1.8">Destination</div>
+      <div class="ft-hc" style="flex:.8;text-align:right">Heure</div>
+      <div class="ft-hc" style="flex:1;text-align:right">Statut</div>
+    </div>
+    <div id="aptTable"><div class="ld"><div class="ld-ring"></div><div class="ld-txt">CHARGEMENT...</div></div></div>
+  </div>
+</div>
+
+<script>
+/* ── AIRPORTS ── */
+const AIRPORTS = {
+  LFML:{name:'Marseille Provence',iata:'MRS',country:'France',lat:43.4393,lng:5.2214,zoom:9,
+    routes:['CDG','LYS','NCE','LHR','MAD','BCN','AMS','FRA','FCO','TUN','ALG','CMN','ORN','DXB','PMI']},
+  LFPG:{name:'Paris Charles de Gaulle',iata:'CDG',country:'France',lat:49.0097,lng:2.5479,zoom:8,
+    routes:['MRS','LYS','NCE','LHR','MAD','JFK','DXB','NRT','PEK','SIN','AMS','FRA','BCN','FCO','IST']},
+  LFMN:{name:'Nice Côte d\'Azur',iata:'NCE',country:'France',lat:43.6584,lng:7.2159,zoom:9,
+    routes:['CDG','LYS','MRS','LHR','MAD','BCN','AMS','GVA','ZRH','FCO','ATH','LIS','BRU','MXP']},
+  LFLY:{name:'Lyon Saint-Exupéry',iata:'LYS',country:'France',lat:45.7256,lng:5.0811,zoom:9,
+    routes:['CDG','MRS','NCE','LHR','MAD','BCN','AMS','FRA','FCO','TLS','BOD','NTE']},
+  LEMD:{name:'Madrid Barajas',iata:'MAD',country:'Espagne',lat:40.4936,lng:-3.5668,zoom:8,
+    routes:['BCN','CDG','LHR','MRS','FCO','AMS','FRA','LIS','JFK','EZE','MEX','GRU']},
+  EGLL:{name:'London Heathrow',iata:'LHR',country:'UK',lat:51.470,lng:-0.4543,zoom:8,
+    routes:['CDG','AMS','FRA','MAD','MRS','JFK','HKG','DXB','SIN','NRT','SYD','ORD']},
+  EHAM:{name:'Amsterdam Schiphol',iata:'AMS',country:'Pays-Bas',lat:52.3086,lng:4.7639,zoom:8,
+    routes:['CDG','LHR','FRA','MAD','MRS','JFK','DXB','NRT','SIN','ORD','HKG','GRU']},
+  EDDF:{name:'Frankfurt Airport',iata:'FRA',country:'Allemagne',lat:50.0379,lng:8.5622,zoom:8,
+    routes:['CDG','LHR','AMS','MAD','MRS','JFK','DXB','NRT','SIN','PEK','ORD','GRU']},
+};
+
+const AIRLINES = [
+  ['AF','Air France'],['EZY','easyJet'],['VLG','Vueling'],['IBE','Iberia'],
+  ['KL','KLM'],['LH','Lufthansa'],['BA','British Airways'],['FR','Ryanair'],
+  ['TK','Turkish'],['U2','easyJet'],['TP','TAP'],['AZ','ITA Airways'],
+  ['XK','Air Corsica'],['TO','Transavia'],['W6','Wizz Air'],['HV','TUI'],
+  ['SK','SAS'],['LX','Swiss'],['OS','Austrian'],['SN','Brussels Airlines']
+];
+
+const AIRLINE_MAP = {
+  AF:{name:'Air France',logo:'🇫🇷'},EZY:{name:'easyJet',logo:'🟠'},
+  VLG:{name:'Vueling',logo:'🟡'},IBE:{name:'Iberia',logo:'🇪🇸'},
+  KL:{name:'KLM',logo:'🇳🇱'},LH:{name:'Lufthansa',logo:'🇩🇪'},
+  BA:{name:'British Airways',logo:'🇬🇧'},FR:{name:'Ryanair',logo:'💛'},
+  TK:{name:'Turkish Airlines',logo:'🇹🇷'},U2:{name:'easyJet',logo:'🟠'},
+  TP:{name:'TAP Portugal',logo:'🇵🇹'},AZ:{name:'ITA Airways',logo:'🇮🇹'},
+  XK:{name:'Air Corsica',logo:'🏝️'},TO:{name:'Transavia',logo:'🟢'},
+  W6:{name:'Wizz Air',logo:'🟣'},SK:{name:'SAS',logo:'🇸🇪'},
+  LX:{name:'Swiss',logo:'🇨🇭'},OS:{name:'Austrian',logo:'🇦🇹'},
+};
+
+/* ── STATE ── */
+let curApt='LFML', mapObj=null, markers={}, flights=[], selCall=null, searchRadius=150;
+let curTab='map', aptTab='dep', isLive=false;
+let trailLines=[], posHistory={}, refreshInt=null;
+
+/* ── MAP ── */
+function initMap(ap) {
+  if (mapObj) { mapObj.remove(); mapObj = null; }
+  mapObj = L.map('map', {zoomControl:true, scrollWheelZoom:true, tap:true})
+    .setView([ap.lat, ap.lng], ap.zoom);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    subdomains:'abcd', maxZoom:19
+  }).addTo(mapObj);
+  // Airport marker
+  L.marker([ap.lat, ap.lng], {icon: L.divIcon({
+    className:'', iconSize:[28,28], iconAnchor:[14,14],
+    html:'<div style="font-size:22px;filter:drop-shadow(0 0 4px rgba(21,101,192,.6));text-align:center">🏛️</div>'
+  })}).addTo(mapObj).bindTooltip(ap.name, {direction:'top', offset:[0,-14]});
+  // Zone circle
+  radiusCircle = L.circle([ap.lat, ap.lng], {
+    radius: searchRadius * 1852,
+    color:'rgba(21,101,192,.15)',
+    fillColor:'rgba(21,101,192,.04)', fillOpacity:1,
+    weight:1, dashArray:'5 10'
+  }).addTo(mapObj);
+}
+
+/* ── PLANE ICON ── */
+function planeIcon(hdg, sel, gnd) {
+  const col = sel ? '#1565C0' : (gnd ? '#F57F17' : '#E53935');
+  const size = sel ? 20 : 15;
+  const shadow = sel ? 'drop-shadow(0 0 5px rgba(21,101,192,.7))' : 'drop-shadow(0 0 2px rgba(229,57,53,.4))';
+  return L.divIcon({
+    className: '',
+    html: `<div style="transform:rotate(${hdg||0}deg);font-size:${size}px;line-height:1;filter:${shadow};color:${col};text-align:center">✈</div>`,
+    iconSize: [22, 22], iconAnchor: [11, 11]
+  });
+}
+
+
+/* ── RAYON DE RECHERCHE ── */
+let radiusCircle = null;
+
+function onRadiusChange(val) {
+  searchRadius = parseInt(val);
+  // Mettre à jour le cercle sur la carte
+  if (radiusCircle) radiusCircle.remove();
+  const ap = AIRPORTS[curApt];
+  radiusCircle = L.circle([ap.lat, ap.lng], {
+    radius: searchRadius * 1852, // nm → mètres
+    color: 'rgba(21,101,192,.15)',
+    fillColor: 'rgba(21,101,192,.04)',
+    fillOpacity: 1,
+    weight: 1,
+    dashArray: '5 10'
+  }).addTo(mapObj);
+  // Recharger avec le nouveau rayon
+  clearTimeout(window._radiusTimer);
+  window._radiusTimer = setTimeout(refreshFlights, 600);
+}
+
+/* ── LOAD FLIGHTS ── */
+async function loadFlights() {
+  const ap = AIRPORTS[curApt];
+  try {
+    const r = await fetch(`/api/flights?lat=${ap.lat}&lon=${ap.lng}&dist=${searchRadius}`, {signal: AbortSignal.timeout(10000)});
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json();
+    if (!data.ok || data.total === 0) throw new Error('no data');
+    if (data.ac) {
+      flights = data.ac.filter(a => a.lat && a.lon).map(a => [
+        (a.flight||a.hex||'').trim(), (a.hex||'').trim(),
+        a.r||'', 0, 0,
+        parseFloat(a.lon), parseFloat(a.lat),
+        (parseFloat(a.alt_baro)||0) * 0.3048,
+        a.alt_baro === 'ground' || a.gnd === 1,
+        (parseFloat(a.gs)||0) * 0.514444,
+        parseFloat(a.track)||0,
+        (parseFloat(a.baro_rate)||0) / 196.85,
+        null, null,
+        (parseFloat(a.alt_geom||a.alt_baro)||0) * 0.3048,
+        String(a.squawk||'').split('.')[0], false, 0,
+        a.from_long||a.dep||'', a.to_long||a.arr||'',
+        a.t||a.desc||a.type||''
+      ]);
+    } else if (data.states) {
+      flights = data.states.filter(f => f[5] && f[6]);
+    }
+    if (flights.length) {
+      isLive = true; updateLiveBadge(true);
+      renderMap(); renderList(); updateStats();
+      return;
+    }
+  } catch(e) { console.warn('API:', e.message); }
+
+  isLive = false; updateLiveBadge(false);
+  if (!flights.length) flights = demoFlights(AIRPORTS[curApt]);
+  else animateDemoFlights();
+  renderMap(); renderList(); updateStats();
+}
+
+async function refreshFlights() {
+  const btn = document.getElementById('btnRefresh');
+  btn.classList.add('spinning');
+  await loadFlights();
+  setTimeout(() => btn.classList.remove('spinning'), 700);
+}
+
+/* ── DEMO FLIGHTS ── */
+function demoFlights(ap) {
+  const als = ['AF','EZY','VLG','IBE','KL','LH','BA','FR','TK','TP','AZ','TO'];
+  const types = ['A320','B737','A321','A319','E190','B787','A350','A220'];
+  return Array.from({length:22}, (_, i) => {
+    const al = als[i % als.length];
+    const lat = ap.lat + (Math.random()-.5)*4.5;
+    const lng = ap.lng + (Math.random()-.5)*4.5;
+    const alt = Math.floor(3000 + Math.random()*36000);
+    const spd = Math.floor(150 + Math.random()*450);
+    const hdg = Math.floor(Math.random()*360);
+    return [
+      `${al}${Math.floor(100+Math.random()*9000)}`,
+      Math.floor(Math.random()*0xFFFFFF).toString(16).padStart(6,'0'),
+      '', 0, 0, lng, lat, alt*0.3048, false,
+      spd*0.514, hdg, 0, null, null, alt*0.3048,
+      Math.floor(1000+Math.random()*6999).toString(), false, 0,
+      '', '', types[i % types.length]
+    ];
+  });
+}
+
+function animateDemoFlights() {
+  flights = flights.map(f => {
+    if (!f[5]||!f[6]) return f;
+    const hdg = (f[10]||0) * Math.PI/180;
+    const spd = (f[9]||100)/111320;
+    const nf = [...f];
+    nf[6] = f[6] + Math.cos(hdg)*spd*15;
+    nf[5] = f[5] + Math.sin(hdg)*spd*15/Math.cos(f[6]*Math.PI/180);
+    return nf;
+  });
+}
+
+/* ── LIVE BADGE ── */
+function updateLiveBadge(live) {
+  const dot = document.getElementById('liveDot');
+  const txt = document.getElementById('liveTxt');
+  if (!dot||!txt) return;
+  if (live) {
+    dot.style.background='var(--grn)'; dot.style.boxShadow='0 0 6px var(--grn)';
+    txt.style.color='var(--grn)'; txt.textContent='EN DIRECT';
+  } else {
+    dot.style.background='var(--amber)'; dot.style.boxShadow='0 0 6px var(--amber)';
+    txt.style.color='var(--amber)'; txt.textContent='SIMULATION';
+  }
+}
+
+/* ── STATS ── */
+function updateStats() {
+  document.getElementById('cvFlights').textContent = flights.length;
+  const alts = flights.filter(f=>f[7]).map(f=>Math.round(f[7]/0.3048));
+  const spds = flights.filter(f=>f[9]).map(f=>Math.round(f[9]*1.944));
+  document.getElementById('cvAlt').textContent = alts.length ? Math.round(alts.reduce((a,b)=>a+b)/alts.length).toLocaleString()+'ft' : '—';
+  document.getElementById('cvSpd').textContent = spds.length ? Math.round(spds.reduce((a,b)=>a+b)/spds.length)+'kt' : '—';
+}
+
+/* ── TRAIL ── */
+function drawTrail(icao, lat, lng) {
+  if (!icao) return;
+  if (!posHistory[icao]) posHistory[icao] = [];
+  posHistory[icao].push([lat, lng]);
+  if (posHistory[icao].length > 80) posHistory[icao].shift();
+  trailLines.forEach(l => l.remove());
+  trailLines = [];
+  const trail = posHistory[icao];
+  for (let i = 1; i < trail.length; i++) {
+    const t = i / trail.length;
+    const l = L.polyline([trail[i-1], trail[i]], {
+      color: '#1565C0', weight: 1 + t*2.5, opacity: 0.1 + t*0.75
+    }).addTo(mapObj);
+    trailLines.push(l);
+  }
+}
+
+function clearRoute() {
+  trailLines.forEach(l => l.remove());
+  trailLines = [];
+  document.getElementById('routeBar').classList.remove('show');
+  selCall = null;
+  renderMap();
+}
+
+/* ── RENDER MAP — animation fluide ── */
+function renderMap() {
+  const toRemove = Object.keys(markers).filter(c => !flights.find(f => (f[0]||'').trim()===c));
+  toRemove.forEach(c => { markers[c].remove(); delete markers[c]; });
+
+  flights.forEach(f => {
+    const call = (f[0]||'').trim() || 'N/A';
+    const hdg = f[10]||0, gnd = f[8], sel = selCall===call;
+    const lat = f[6], lng = f[5];
+
+    if (markers[call]) {
+      // Animation fluide : interpoler vers nouvelle position
+      const cur = markers[call].getLatLng();
+      const steps = 10;
+      const dLat = (lat - cur.lat) / steps;
+      const dLng = (lng - cur.lng) / steps;
+      let step = 0;
+      const iv = setInterval(() => {
+        step++;
+        markers[call].setLatLng([cur.lat + dLat*step, cur.lng + dLng*step]);
+        if (step >= steps) clearInterval(iv);
+      }, 80);
+      markers[call].setIcon(planeIcon(hdg, sel, gnd));
+      if (sel) markers[call].setZIndexOffset(1000);
+    } else {
+      const m = L.marker([lat, lng], {icon: planeIcon(hdg,sel,gnd), zIndexOffset: sel?1000:0}).addTo(mapObj);
+      m.on('click', () => openFlight(call, f));
+      markers[call] = m;
+    }
+
+    // Update trail if selected
+    if (sel) drawTrail(f[1]||f[0], lat, lng);
+  });
+}
+
+/* ── RENDER LIST ── */
+function renderList() {
+  const q = (document.getElementById('flSearch')?.value||'').toUpperCase();
+  const fl = q ? flights.filter(f=>(f[0]||'').trim().toUpperCase().includes(q)) : flights;
+  document.getElementById('flpTitle').textContent = `VOLS EN DIRECT (${flights.length})`;
+  if (!fl.length) {
+    document.getElementById('flpList').innerHTML = '<div class="ld"><div class="ld-txt">AUCUN VOL</div></div>';
+    return;
+  }
+  document.getElementById('flpList').innerHTML = fl.map(f => {
+    const call = (f[0]||'').trim() || 'N/A';
+    const alt = f[7] ? Math.round(f[7]/0.3048).toLocaleString()+' ft' : '—';
+    const spd = f[9] ? Math.round(f[9]*1.944)+' kt' : '—';
+    const gnd = f[8], sel = selCall===call;
+    return `<div class="vrow${sel?' hi':''}" onclick="openFlight('${call}',null)">
+      <div class="vr-plane">${gnd?'🟡':'✈'}</div>
+      <div class="vr-main"><div class="vr-call">${call}</div><div class="vr-route">${f[19]||''} ${f[17]?'→ '+f[18]:''}</div></div>
+      <div class="vr-right"><div class="vr-alt">${alt}</div><div class="vr-spd">${spd}</div><div class="vr-dot ${gnd?'gnd':'ok'}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ── OPEN FLIGHT ── */
+function openFlight(call, fdata) {
+  const f = fdata || flights.find(x => (x[0]||'').trim()===call);
+  if (!f) return;
+  selCall = call;
+
+  // Fly to plane + draw trail
+  if (mapObj && f[6] && f[5]) {
+    mapObj.flyTo([f[6], f[5]], Math.max(mapObj.getZoom(), 10), {duration:.8});
+    drawTrail(f[1]||f[0], f[6], f[5]);
   }
 
-  // ── MODE RADAR : tous les vols dans la zone ──
-  let ac = [];
+  // Route bar
+  const from = f[17] || '???', to = f[18] || '???';
+  document.getElementById('rbFrom').textContent = (from && from!=='???') ? from : '—';
+  document.getElementById('rbTo').textContent = (to && to!=='???') ? to : '—';
+  document.getElementById('rbCall').textContent = call;
+  document.getElementById('routeBar').classList.add('show');
+
+  // Fill detail sheet
+  const alt = f[7] ? Math.round(f[7]/0.3048).toLocaleString()+' ft' : '—';
+  const spd = f[9] ? Math.round(f[9]*1.944)+' kt' : '—';
+  const hdg = f[10] ? Math.round(f[10])+'°' : '—';
+  const vr  = f[11] ? ((f[11]>0?'▲ ':'▼ ')+Math.abs(Math.round(f[11]*196.85))+' fpm') : '—';
+  const gnd = f[8];
+
+  document.getElementById('fshCall').childNodes[0].nodeValue = call+' ';
+  document.getElementById('fshBadge').textContent = gnd ? 'AU SOL' : 'EN VOL';
+  document.getElementById('fshBadge').className = 'fsh-badge '+(gnd?'sol':'vol');
+  document.getElementById('fshFrom').textContent = (from && from!=='???') ? from : 'Non dispo';
+  document.getElementById('fshTo').textContent = (to && to!=='???') ? to : 'Non dispo';
+  const alCode2 = getAirlineCode(call);
+  const alName = alCode2 ? AIRLINE_MAP[alCode2]?.name : null;
+  const typeStr = f[19] || '';
+  document.getElementById('fshAirline').textContent = [alName, typeStr].filter(Boolean).join(' · ') || '—';
+  document.getElementById('fshAlt').textContent = alt;
+  document.getElementById('fshSpd').textContent = spd;
+  document.getElementById('fshHdg').textContent = hdg;
+  document.getElementById('fshVrate').textContent = vr;
+  document.getElementById('fshType').textContent = f[19] || 'N/A';
+  document.getElementById('fshSqk').textContent = f[14] ? String(f[14]).split('.')[0].padStart(4,'0') : '—';
+  document.getElementById('fshIcao').textContent = (f[1]||'').trim().toUpperCase() || '—';
+  document.getElementById('fshPos').textContent = f[6] ? `${parseFloat(f[6]).toFixed(4)}° / ${parseFloat(f[5]).toFixed(4)}°` : '—';
+
+  // Fetch plane photo + route info
+  fetchPlanePhoto(f[1]||f[0], call);
+  fetchRouteInfo(call);
+
+  document.getElementById('fsheet').classList.add('show');
+  document.getElementById('fov').classList.add('show');
+  document.getElementById('flpanel').classList.remove('show');
+  renderList();
+}
+
+function closeFSheet() {
+  document.getElementById('fsheet').classList.remove('show');
+  document.getElementById('fov').classList.remove('show');
+  clearRoute();
+}
+
+
+/* ── FETCH ROUTE INFO via callsign ── */
+async function fetchRouteInfo(call) {
+  if (!call || call.length < 3) return;
+  try {
+    const r = await fetch(`/api/flights?callsign=${encodeURIComponent(call)}`, {
+      signal: AbortSignal.timeout(6000)
+    });
+    if (!r.ok) return;
+    const data = await r.json();
+    if (!data.ok) return;
+
+    // Mise à jour des codes IATA
+    const dep = data.dep || data.from_long || '';
+    const arr = data.arr || data.to_long   || '';
+
+    // Extraire code IATA (4 ou 3 lettres)
+    const depCode = dep ? dep.replace(/\s.*/,'').substring(0,4).toUpperCase() : '—';
+    const arrCode = arr ? arr.replace(/\s.*/,'').substring(0,4).toUpperCase() : '—';
+    const depFull = data.from_long || dep || 'Inconnu';
+    const arrFull = data.to_long   || arr || 'Inconnu';
+
+    if (dep) {
+      document.getElementById('fshFrom').textContent     = depCode;
+      document.getElementById('fshFromName').textContent = depFull;
+      document.getElementById('rbFrom').textContent      = depCode;
+    }
+    if (arr) {
+      document.getElementById('fshTo').textContent     = arrCode;
+      document.getElementById('fshToName').textContent = arrFull;
+      document.getElementById('rbTo').textContent      = arrCode;
+    }
+
+    // Mettre à jour type appareil si manquant
+    const typeEl = document.getElementById('fshType');
+    if (data.type && (!typeEl.textContent || typeEl.textContent === '—')) {
+      typeEl.textContent = data.type;
+    }
+  } catch(e) { console.warn('fetchRouteInfo:', e.message); }
+}
+
+/* ── PLANE PHOTO ── */
+function getAirlineCode(call) {
+  const cs = (call||'').trim().toUpperCase();
+  for (const k of Object.keys(AIRLINE_MAP)) {
+    if (cs.startsWith(k)) return k;
+  }
+  return null;
+}
+
+async function fetchPlanePhoto(icao, call) {
+  const photoEl = document.getElementById('fshPhoto');
+  const alCode = getAirlineCode(call);
+  const alData = alCode ? AIRLINE_MAP[alCode] : null;
+  const badge = alData ? `<div class="fsh-photo-airline">${alData.logo} ${alData.name}</div>` : '';
+
+  photoEl.innerHTML = `<div class="fsh-photo-fb"><div class="fsh-photo-fb-ico">${alData?.logo||'✈️'}</div><div class="fsh-photo-fb-txt">CHARGEMENT...</div></div>${badge}`;
 
   try {
-    const r = await fetch(`https://api.adsb.lol/v2/lat/${lat}/lon/${lon}/dist/${dist}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(7000),
-    });
-    if (r.ok) { const d = await r.json(); ac = d.ac || []; }
+    const hex = (icao||'').trim().toLowerCase();
+    if (hex && hex.length >= 4) {
+      const r = await fetch(`https://api.planespotters.net/pub/photos/hex/${hex}`);
+      if (r.ok) {
+        const d = await r.json();
+        if (d.photos?.length > 0) {
+          const p = d.photos[0];
+          const imgUrl = p.thumbnail_large?.src || p.thumbnail?.src;
+          const reg = p.aircraft?.reg || '';
+          const photographer = p.photographer || '';
+          if (imgUrl) {
+            photoEl.innerHTML = `
+              <img src="${imgUrl}" alt="Aircraft" onerror="this.parentElement.innerHTML='<div class=fsh-photo-fb><div class=fsh-photo-fb-ico>${alData?.logo||'✈️'}</div><div class=fsh-photo-fb-txt>Photo indisponible</div></div>'">
+              ${badge}
+              <div class="fsh-photo-credit">${reg} · © ${photographer}</div>`;
+            return;
+          }
+        }
+      }
+    }
   } catch(e) {}
 
-  if (!ac.length) {
-    try {
-      const r = await fetch(`https://api.adsb.one/v2/point/${lat}/${lon}/${dist}`, {
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-        signal: AbortSignal.timeout(7000),
-      });
-      if (r.ok) { const d = await r.json(); ac = d.ac || []; }
-    } catch(e) {}
-  }
-
-  if (!ac.length) {
-    return new Response(JSON.stringify({ ok: false, total: 0 }), { status: 503, headers });
-  }
-
-  return new Response(JSON.stringify({ ok: true, ac, total: ac.length }), { headers });
+  // Fallback
+  photoEl.innerHTML = `<div class="fsh-photo-fb" style="background:linear-gradient(135deg,#EBF4FF,#F0F4F8)"><div class="fsh-photo-fb-ico">${alData?.logo||'✈️'}</div><div class="fsh-photo-fb-txt">${alData?.name||call}</div></div>${badge}`;
 }
+
+/* ── TABS ── */
+function switchTab(tab) {
+  curTab = tab;
+  ['map','flights','airport'].forEach(t => {
+    document.getElementById('bt'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('on', t===tab);
+  });
+  document.getElementById('flpanel').classList.toggle('show', tab==='flights');
+  document.getElementById('aptpanel').classList.toggle('show', tab==='airport');
+  if (tab==='airport') buildAptTable();
+}
+
+/* ── AIRPORT TABLE ── */
+function switchAptTab(t) {
+  aptTab = t;
+  document.getElementById('atDep').classList.toggle('on', t==='dep');
+  document.getElementById('atArr').classList.toggle('on', t==='arr');
+  buildAptTable();
+}
+
+function buildAptTable() {
+  const ap = AIRPORTS[curApt];
+  document.getElementById('aptName').textContent = ap.name;
+  document.getElementById('aptIata').textContent = `${ap.iata} · ${curApt} · ${ap.country}`;
+  const isDep = aptTab === 'dep';
+  const now = new Date();
+  const routes = ap.routes || ['CDG','LHR','MAD','BCN','AMS','FRA','FCO','LIS'];
+  const stats = isDep
+    ? ['ok','ok','brd','brd','ok','del','dep','dep','ok','brd']
+    : ['ok','arr','ok','del','arr','ok','arr','ok','del','arr'];
+  const statLbl = {ok:"À L'HEURE",brd:'EMBARQUEMENT',del:'RETARDÉ',dep:'DÉCOLLÉ',arr:'ATTERRI'};
+
+  const rows = Array.from({length:16}, (_, i) => {
+    const dt = new Date(now.getTime() + (isDep?1:-1) * (i*24 + Math.floor(Math.random()*18)) * 60000);
+    const hh = dt.getHours().toString().padStart(2,'0');
+    const mm = dt.getMinutes().toString().padStart(2,'0');
+    const al = AIRLINES[i % AIRLINES.length];
+    const num = Math.floor(100 + Math.random()*9000);
+    const dest = routes[i % routes.length];
+    const stKey = stats[Math.floor(Math.random()*stats.length)];
+    const delay = stKey==='del' ? Math.floor(15+Math.random()*45) : 0;
+    return `<div class="ft-row">
+      <div class="ft-c sky" style="flex:1.2">${al[0]}${num}</div>
+      <div class="ft-c dim" style="flex:1.8">${dest}</div>
+      <div class="ft-c" style="flex:.8;text-align:right">${hh}:${mm}</div>
+      <div class="ft-c" style="flex:1;text-align:right">
+        <span class="st st-${stKey}">${delay?'+'+delay+'min':statLbl[stKey]}</span>
+      </div>
+    </div>`;
+  }).sort((a,b) => {
+    const ta = a.match(/\d{2}:\d{2}/)?.[0]||'';
+    const tb = b.match(/\d{2}:\d{2}/)?.[0]||'';
+    return ta.localeCompare(tb);
+  });
+
+  document.getElementById('aptTable').innerHTML = rows.join('');
+}
+
+/* ── AIRPORT CHANGE ── */
+function changeAirport() {
+  curApt = document.getElementById('aptSel').value;
+  const ap = AIRPORTS[curApt];
+  selCall = null;
+  trailLines.forEach(l=>l.remove()); trailLines = [];
+  Object.values(markers).forEach(m=>m.remove()); markers = {};
+  flights = [];
+  if (mapObj) mapObj.flyTo([ap.lat, ap.lng], ap.zoom, {duration:1.2});
+  closeFSheet();
+  document.getElementById('routeBar').classList.remove('show');
+  document.getElementById('flpList').innerHTML = '<div class="ld"><div class="ld-ring"></div><div class="ld-txt">CONNEXION...</div></div>';
+  setTimeout(loadFlights, 600);
+}
+
+/* ── INIT ── */
+window.addEventListener('load', () => {
+  initMap(AIRPORTS[curApt]);
+  loadFlights();
+  refreshInt = setInterval(loadFlights, 12000);
+  document.getElementById('topSearch').addEventListener('keydown', e => {
+    if (e.key==='Enter') {
+      const q = e.target.value.trim().toUpperCase();
+      const f = flights.find(x => (x[0]||'').trim().toUpperCase().includes(q));
+      if (f) openFlight((f[0]||'').trim(), f);
+    }
+  });
+});
+</script>
+</body>
+</html>
