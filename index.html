@@ -738,7 +738,38 @@ async function fetchRouteInfo(call) {
       document.getElementById('rbTo').textContent      = arrCode;
     }
 
-    // Mettre à jour type appareil si manquant
+    // Heures réelles depuis AeroDataBox
+    if (data.dep_time) {
+      const dt = data.dep_time.replace('T',' ').substring(0,16);
+      document.getElementById('fshDepTime').textContent = dt.split(' ')[1] || dt;
+    }
+    if (data.arr_time) {
+      const at = data.arr_time.replace('T',' ').substring(0,16);
+      document.getElementById('fshArrTime').textContent = at.split(' ')[1] || at;
+    }
+
+    // Terminal + Gate
+    const gateInfo = [
+      data.dep_terminal ? 'Terminal '+data.dep_terminal : '',
+      data.dep_gate     ? 'Porte '+data.dep_gate        : '',
+    ].filter(Boolean).join(' · ');
+    if (gateInfo) {
+      document.getElementById('fshAirline').textContent =
+        [document.getElementById('fshAirline').textContent, gateInfo].filter(s=>s&&s!=='—').join(' · ');
+    }
+
+    // Statut vol
+    if (data.status) {
+      const statusMap = {
+        'Arrived':'ATTERRI','Landed':'ATTERRI','Departed':'DÉCOLLÉ',
+        'EnRoute':'EN VOL','Scheduled':'PROGRAMMÉ','Cancelled':'ANNULÉ',
+        'Delayed':'RETARDÉ','Unknown':'—'
+      };
+      const badge = document.getElementById('fshBadge');
+      badge.textContent = statusMap[data.status] || data.status;
+    }
+
+    // Type appareil
     const typeEl = document.getElementById('fshType');
     if (data.type && (!typeEl.textContent || typeEl.textContent === '—')) {
       typeEl.textContent = data.type;
