@@ -76,35 +76,50 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--txt);background:var(--bg
 
 /* FLIGHT DETAIL SHEET */
 .fov{position:fixed;inset:0;z-index:600;pointer-events:none;transition:background .3s}
-.fov.show{pointer-events:all;background:rgba(0,0,0,.15)}
-.fsheet{position:fixed;left:0;right:0;bottom:0;z-index:700;background:var(--panel);border-radius:16px 16px 0 0;border-top:1px solid var(--border2);transform:translateY(100%);transition:transform .38s cubic-bezier(.4,0,.2,1);max-height:74dvh;display:flex;flex-direction:column;box-shadow:0 -4px 24px rgba(0,0,0,.12)}
+.fov.show{pointer-events:all;background:rgba(0,0,0,.2)}
+.fsheet{position:fixed;left:0;right:0;bottom:0;z-index:700;background:var(--panel);border-radius:18px 18px 0 0;border-top:1px solid var(--border2);transform:translateY(100%);transition:transform .4s cubic-bezier(.4,0,.2,1);max-height:90dvh;display:flex;flex-direction:column;box-shadow:0 -6px 32px rgba(0,0,0,.16)}
 .fsheet.show{transform:translateY(0)}
-.fsh-handle{padding:10px 0 4px;display:flex;justify-content:center;flex-shrink:0;cursor:grab}
+.fsh-handle{padding:10px 0 6px;display:flex;justify-content:center;flex-shrink:0}
 .fsh-hbar{width:36px;height:4px;border-radius:2px;background:var(--border2)}
-.fsh-photo{width:100%;height:150px;position:relative;overflow:hidden;background:#EBF4FF;flex-shrink:0}
+.fsh-close{position:absolute;top:14px;right:14px;z-index:10;width:28px;height:28px;border-radius:50%;background:var(--panel2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--txt3);cursor:pointer}
+.fsh-photo{width:100%;height:160px;position:relative;overflow:hidden;background:#EBF4FF;flex-shrink:0}
 .fsh-photo img{width:100%;height:100%;object-fit:cover;display:block}
-.fsh-photo-fb{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
-.fsh-photo-fb-ico{font-size:44px}
+.fsh-photo-fb{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#EBF4FF,#F0F4F8)}
+.fsh-photo-fb-ico{font-size:48px}
 .fsh-photo-fb-txt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--txt3);letter-spacing:.06em}
-.fsh-photo-airline{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.92);border-radius:8px;padding:5px 10px;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--txt)}
-.fsh-photo-credit{position:absolute;bottom:6px;right:8px;font-size:9px;color:rgba(255,255,255,.7);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px}
-.fsh-head{padding:12px 16px 12px;flex-shrink:0;border-bottom:1px solid var(--border)}
-.fsh-call{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--sky);margin-bottom:3px;display:flex;align-items:center;gap:8px}
-.fsh-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em}
+.fsh-photo-airline{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.92);border-radius:8px;padding:5px 10px;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--txt);backdrop-filter:blur(4px)}
+.fsh-photo-credit{position:absolute;bottom:6px;right:8px;font-size:9px;color:rgba(255,255,255,.8);background:rgba(0,0,0,.35);padding:2px 7px;border-radius:4px}
+.fsh-toprow{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 2px;flex-shrink:0;position:relative}
+.fsh-callsign{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--sky)}
+.fsh-badges{display:flex;gap:6px;align-items:center}
+.fsh-badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:5px;letter-spacing:.06em}
 .fsh-badge.vol{background:rgba(21,101,192,.12);color:var(--sky)}
 .fsh-badge.sol{background:rgba(245,127,23,.12);color:var(--amber)}
-.fsh-route{font-size:15px;font-weight:600;color:var(--txt);margin-bottom:2px;display:flex;align-items:center;gap:8px}
-.fsh-airline{font-size:12px;color:var(--txt2)}
-.fsh-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:14px 16px 24px}
-.fsh-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px}
-.fsh-cell{background:var(--panel2);padding:11px 10px;text-align:center}
-.fsh-cell-v{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:var(--txt);margin-bottom:2px}
+.fsh-badge.type{background:var(--panel2);color:var(--txt2);border:1px solid var(--border2)}
+.fsh-airline-row{font-size:12px;color:var(--txt2);padding:0 16px 10px;flex-shrink:0}
+.fsh-route-block{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 16px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-shrink:0;background:var(--panel)}
+.fsh-apt{flex:1}
+.fsh-apt-code{font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:700;color:var(--txt);line-height:1;margin-bottom:3px}
+.fsh-apt-name{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em}
+.fsh-apt-time{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--txt2);margin-top:5px}
+.fsh-apt-time span{font-size:10px;color:var(--txt3);margin-right:3px}
+.fsh-progress{flex:1.4;display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 10px}
+.fsh-prog-bar{position:relative;width:100%;height:3px;background:var(--border2);border-radius:2px}
+.fsh-prog-fill{height:100%;background:linear-gradient(90deg,var(--sky2),var(--sky));border-radius:2px;transition:width .5s}
+.fsh-prog-plane{position:absolute;top:50%;transform:translate(-50%,-50%);font-size:15px;transition:left .5s}
+.fsh-prog-labels{display:flex;justify-content:space-between;width:100%;font-size:9px;color:var(--txt3);font-family:'IBM Plex Mono',monospace;letter-spacing:.04em}
+.fsh-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.fsh-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
+.fsh-cell{background:var(--panel2);padding:12px 10px;text-align:center}
+.fsh-cell-v{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--txt);margin-bottom:3px}
 .fsh-cell-v.hi{color:var(--sky)}
 .fsh-cell-l{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em}
-.fsh-info-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+.fsh-info-list{padding:0 16px 24px}
+.fsh-info-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)}
 .fsh-info-row:last-child{border-bottom:none}
 .fsh-info-l{font-size:12px;color:var(--txt2)}
 .fsh-info-v{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--txt)}
+
 
 /* FLIGHTS LIST PANEL */
 .flpanel{position:fixed;left:0;right:0;bottom:0;z-index:550;background:var(--panel);border-radius:16px 16px 0 0;border-top:1px solid var(--border2);transform:translateY(100%);transition:transform .38s cubic-bezier(.4,0,.2,1);height:75dvh;display:flex;flex-direction:column;box-shadow:0 -4px 24px rgba(0,0,0,.1)}
@@ -226,27 +241,63 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--txt);background:var(--bg
 <div class="fov" id="fov" onclick="closeFSheet()"></div>
 <div class="fsheet" id="fsheet">
   <div class="fsh-handle"><div class="fsh-hbar"></div></div>
+  <div class="fsh-close" onclick="closeFSheet()">✕</div>
+
+  <!-- Photo avion -->
   <div class="fsh-photo" id="fshPhoto">
     <div class="fsh-photo-fb"><div class="fsh-photo-fb-ico">✈️</div><div class="fsh-photo-fb-txt">CHARGEMENT...</div></div>
   </div>
-  <div class="fsh-head">
-    <div class="fsh-call"><span id="fshCall">—</span><span class="fsh-badge vol" id="fshBadge">EN VOL</span></div>
-    <div class="fsh-route"><span id="fshFrom">—</span><span style="color:var(--txt3);font-size:12px">━━▶</span><span id="fshTo">—</span></div>
-    <div class="fsh-airline" id="fshAirline">—</div>
+
+  <!-- Callsign + badges -->
+  <div class="fsh-toprow">
+    <div class="fsh-callsign" id="fshCall">—</div>
+    <div class="fsh-badges">
+      <span class="fsh-badge type" id="fshType">—</span>
+      <span class="fsh-badge vol" id="fshBadge">EN VOL</span>
+    </div>
   </div>
+  <div class="fsh-airline-row" id="fshAirline">—</div>
+
+  <!-- Grande route IATA style FR24 -->
+  <div class="fsh-route-block">
+    <div class="fsh-apt">
+      <div class="fsh-apt-code" id="fshFrom">—</div>
+      <div class="fsh-apt-name" id="fshFromName">Départ</div>
+      <div class="fsh-apt-time"><span>SCH</span> <span id="fshDepTime">—</span></div>
+    </div>
+    <div class="fsh-progress">
+      <div class="fsh-prog-bar">
+        <div class="fsh-prog-fill" id="fshProgFill" style="width:45%"></div>
+        <div class="fsh-prog-plane" id="fshProgPlane" style="left:45%">✈</div>
+      </div>
+      <div class="fsh-prog-labels">
+        <span id="fshDist">—</span>
+        <span id="fshEta">—</span>
+      </div>
+    </div>
+    <div class="fsh-apt" style="text-align:right">
+      <div class="fsh-apt-code" id="fshTo">—</div>
+      <div class="fsh-apt-name" id="fshToName">Arrivée</div>
+      <div class="fsh-apt-time"><span>EST</span> <span id="fshArrTime">—</span></div>
+    </div>
+  </div>
+
+  <!-- Scroll -->
   <div class="fsh-scroll">
+    <!-- Data grid -->
     <div class="fsh-grid">
       <div class="fsh-cell"><div class="fsh-cell-v hi" id="fshAlt">—</div><div class="fsh-cell-l">Altitude</div></div>
       <div class="fsh-cell"><div class="fsh-cell-v" id="fshSpd">—</div><div class="fsh-cell-l">Vitesse</div></div>
       <div class="fsh-cell"><div class="fsh-cell-v" id="fshHdg">—</div><div class="fsh-cell-l">Cap</div></div>
       <div class="fsh-cell"><div class="fsh-cell-v" id="fshVrate">—</div><div class="fsh-cell-l">Vario</div></div>
-      <div class="fsh-cell"><div class="fsh-cell-v" id="fshType">—</div><div class="fsh-cell-l">Appareil</div></div>
+      <div class="fsh-cell"><div class="fsh-cell-v" id="fshMach">—</div><div class="fsh-cell-l">Mach</div></div>
       <div class="fsh-cell"><div class="fsh-cell-v" id="fshSqk">—</div><div class="fsh-cell-l">Squawk</div></div>
     </div>
-    <div>
-      <div class="fsh-info-row"><div class="fsh-info-l">Code ICAO</div><div class="fsh-info-v" id="fshIcao">—</div></div>
-      <div class="fsh-info-row"><div class="fsh-info-l">Position</div><div class="fsh-info-v" id="fshPos">—</div></div>
-      <div class="fsh-info-row"><div class="fsh-info-l">Source</div><div class="fsh-info-v">ADS-B · OpenSky</div></div>
+    <!-- Extra infos -->
+    <div class="fsh-info-list">
+      <div class="fsh-info-row"><div class="fsh-info-l">Immatriculation</div><div class="fsh-info-v" id="fshIcao">—</div></div>
+      <div class="fsh-info-row"><div class="fsh-info-l">Position GPS</div><div class="fsh-info-v" id="fshPos">—</div></div>
+      <div class="fsh-info-row"><div class="fsh-info-l">Source données</div><div class="fsh-info-v">ADS-B · adsb.lol</div></div>
     </div>
   </div>
 </div>
@@ -592,8 +643,9 @@ function openFlight(call, fdata) {
   document.getElementById('fshIcao').textContent = (f[1]||'').trim().toUpperCase() || '—';
   document.getElementById('fshPos').textContent = f[6] ? `${parseFloat(f[6]).toFixed(4)}° / ${parseFloat(f[5]).toFixed(4)}°` : '—';
 
-  // Fetch plane photo
+  // Fetch plane photo + route info
   fetchPlanePhoto(f[1]||f[0], call);
+  fetchRouteInfo(call);
 
   document.getElementById('fsheet').classList.add('show');
   document.getElementById('fov').classList.add('show');
@@ -605,6 +657,47 @@ function closeFSheet() {
   document.getElementById('fsheet').classList.remove('show');
   document.getElementById('fov').classList.remove('show');
   clearRoute();
+}
+
+
+/* ── FETCH ROUTE INFO via callsign ── */
+async function fetchRouteInfo(call) {
+  if (!call || call.length < 3) return;
+  try {
+    const r = await fetch(`/api/flights?callsign=${encodeURIComponent(call)}`, {
+      signal: AbortSignal.timeout(6000)
+    });
+    if (!r.ok) return;
+    const data = await r.json();
+    if (!data.ok) return;
+
+    // Mise à jour des codes IATA
+    const dep = data.dep || data.from_long || '';
+    const arr = data.arr || data.to_long   || '';
+
+    // Extraire code IATA (4 ou 3 lettres)
+    const depCode = dep ? dep.replace(/\s.*/,'').substring(0,4).toUpperCase() : '—';
+    const arrCode = arr ? arr.replace(/\s.*/,'').substring(0,4).toUpperCase() : '—';
+    const depFull = data.from_long || dep || 'Inconnu';
+    const arrFull = data.to_long   || arr || 'Inconnu';
+
+    if (dep) {
+      document.getElementById('fshFrom').textContent     = depCode;
+      document.getElementById('fshFromName').textContent = depFull;
+      document.getElementById('rbFrom').textContent      = depCode;
+    }
+    if (arr) {
+      document.getElementById('fshTo').textContent     = arrCode;
+      document.getElementById('fshToName').textContent = arrFull;
+      document.getElementById('rbTo').textContent      = arrCode;
+    }
+
+    // Mettre à jour type appareil si manquant
+    const typeEl = document.getElementById('fshType');
+    if (data.type && (!typeEl.textContent || typeEl.textContent === '—')) {
+      typeEl.textContent = data.type;
+    }
+  } catch(e) { console.warn('fetchRouteInfo:', e.message); }
 }
 
 /* ── PLANE PHOTO ── */
