@@ -474,7 +474,8 @@ async function loadFlights() {
         null, null,
         (parseFloat(a.alt_geom||a.alt_baro)||0) * 0.3048,
         String(a.squawk||'').split('.')[0], false, 0,
-        a.from_long||a.dep||'', a.to_long||a.arr||'',
+        a.dep||a.from_long||a.origin||'',
+        a.arr||a.to_long||a.destination||'',
         a.t||a.desc||a.type||''
       ]);
     } else if (data.states) {
@@ -705,7 +706,11 @@ function closeFSheet() {
 async function fetchRouteInfo(call) {
   if (!call || call.length < 3) return;
   try {
-    const r = await fetch(`/api/flights?callsign=${encodeURIComponent(call)}`, {
+    // Passer à la fois callsign ET hex pour maximiser les chances
+    const flightData = flights.find(f => (f[0]||'').trim() === call);
+    const hexIcao = flightData ? (flightData[1]||'').trim() : '';
+    const lookupParam = call.length >= 3 ? `callsign=${encodeURIComponent(call)}` : `callsign=${hexIcao}`;
+    const r = await fetch(`/api/flights?${lookupParam}`, {
       signal: AbortSignal.timeout(6000)
     });
     if (!r.ok) return;
