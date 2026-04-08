@@ -214,6 +214,14 @@ body{font-family:'Nunito',sans-serif;color:var(--txt);background:var(--bg)}
 .sp-info-l{font-size:11px;color:var(--txt2)}
 .sp-info-v{font-family:'DM Mono',monospace;font-size:11px;color:var(--txt);text-align:right}
 
+
+/* AIRPORT MARKERS */
+.apm{display:flex;flex-direction:column;align-items:center;cursor:pointer;gap:2px}
+.apm-dot{width:9px;height:9px;border-radius:50%;background:#1A73E8;border:2px solid #fff;box-shadow:0 1px 6px rgba(26,115,232,.5);transition:transform .15s}
+.apm-lbl{font-family:'Nunito',sans-serif;font-size:9px;font-weight:700;color:#1A73E8;background:rgba(255,255,255,.88);border-radius:3px;padding:1px 4px;white-space:nowrap;letter-spacing:.02em;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.apm.sel .apm-dot{background:#E53935;border-color:#fff;transform:scale(1.4);box-shadow:0 2px 8px rgba(229,57,53,.5)}
+.apm.sel .apm-lbl{color:#E53935}
+
 .ld{text-align:center;padding:32px 16px}
 .ld-ring{width:26px;height:26px;border:2px solid var(--border2);border-top-color:var(--sky);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
 .ld-txt{font-family:'DM Mono',monospace;font-size:10px;color:var(--txt3);letter-spacing:.08em}
@@ -385,38 +393,46 @@ const RAPIDAPI_KEY = '6ba60a59eamshceaf2a48185646cp13a77bjsnf3305db0de2c';
 
 /* ── AÉROPORTS FRANCE ── */
 const AIRPORTS_FR = {
-  CDG:{name:'Paris Charles de Gaulle',city:'Paris',icao:'LFPG',lat:49.0097,lng:2.5479},
-  ORY:{name:'Paris Orly',city:'Paris',icao:'LFPO',lat:48.7253,lng:2.3595},
-  MRS:{name:'Marseille Provence',city:'Marseille',icao:'LFML',lat:43.4393,lng:5.2214},
-  NCE:{name:'Nice Côte d\'Azur',city:'Nice',icao:'LFMN',lat:43.6584,lng:7.2159},
-  LYS:{name:'Lyon Saint-Exupéry',city:'Lyon',icao:'LFLY',lat:45.7256,lng:5.0811},
-  TLS:{name:'Toulouse Blagnac',city:'Toulouse',icao:'LFBO',lat:43.6293,lng:1.3678},
-  BOD:{name:'Bordeaux Mérignac',city:'Bordeaux',icao:'LFBD',lat:44.8283,lng:-0.7155},
-  NTE:{name:'Nantes Atlantique',city:'Nantes',icao:'LFRS',lat:47.1532,lng:-1.6108},
-  SXB:{name:'Strasbourg Entzheim',city:'Strasbourg',icao:'LFST',lat:48.5383,lng:7.6283},
-  MPL:{name:'Montpellier Méditerranée',city:'Montpellier',icao:'LFMT',lat:43.5762,lng:3.9630},
-  AJA:{name:'Ajaccio Napoléon Bonaparte',city:'Ajaccio',icao:'LFKJ',lat:41.9236,lng:8.8029},
-  BIA:{name:'Bastia Poretta',city:'Bastia',icao:'LFKB',lat:42.5527,lng:9.4837},
-  BES:{name:'Brest Bretagne',city:'Brest',icao:'LFRB',lat:48.4479,lng:-4.4185},
-  BIQ:{name:'Biarritz Pays Basque',city:'Biarritz',icao:'LFBZ',lat:43.4683,lng:-1.5231},
-  LIL:{name:'Lille Lesquin',city:'Lille',icao:'LFQQ',lat:50.5636,lng:3.0886},
-  LDE:{name:'Tarbes Lourdes Pyrénées',city:'Tarbes',icao:'LFBT',lat:43.1787,lng:-0.0064},
-  PUF:{name:'Pau Pyrénées',city:'Pau',icao:'LFBP',lat:43.3800,lng:-0.4186},
-  CLY:{name:'Calvi Sainte-Catherine',city:'Calvi',icao:'LFKC',lat:42.5308,lng:8.7931},
-  FSC:{name:'Figari Sud Corse',city:'Figari',icao:'LFKG',lat:41.5006,lng:9.0978},
-  CMF:{name:'Chambéry Savoie',city:'Chambéry',icao:'LFLB',lat:45.6381,lng:5.8802},
-  GNB:{name:'Grenoble Isère',city:'Grenoble',icao:'LFLS',lat:45.3629,lng:5.3294},
-  AVN:{name:'Avignon Provence',city:'Avignon',icao:'LFMV',lat:43.9073,lng:4.9018},
-  RNS:{name:'Rennes Saint-Jacques',city:'Rennes',icao:'LFRN',lat:48.0695,lng:-1.7348},
-  MLH:{name:'Mulhouse EuroAirport',city:'Mulhouse',icao:'LFSB',lat:47.5896,lng:7.5299},
-  DIJ:{name:'Dijon Bourgogne',city:'Dijon',icao:'LFSD',lat:47.2689,lng:5.0900},
-  EGC:{name:'Bergerac Périgord',city:'Bergerac',icao:'LFBE',lat:44.8253,lng:0.5187},
-  LRT:{name:'Lorient Bretagne Sud',city:'Lorient',icao:'LFRH',lat:47.7606,lng:-3.4400},
-  CCF:{name:'Carcassonne',city:'Carcassonne',icao:'LFMK',lat:43.2160,lng:2.3063},
-  AGF:{name:'Agen La Garenne',city:'Agen',icao:'LFBA',lat:44.1747,lng:0.5906},
-  RDZ:{name:'Rodez Aveyron',city:'Rodez',icao:'LFCR',lat:44.4079,lng:2.4826},
-  NCY:{name:'Annecy Haute-Savoie',city:'Annecy',icao:'LFLI',lat:45.9292,lng:6.1003},
-  FNI:{name:'Nîmes Alès Camargue',city:'Nîmes',icao:'LFTW',lat:43.7574,lng:4.4163},
+  CDG:{name:'Paris Charles de Gaulle',city:'Paris',icao:'LFPG',lat:49.0097,lng:2.5479,pax:57},
+  ORY:{name:'Paris Orly',city:'Paris',icao:'LFPO',lat:48.7253,lng:2.3595,pax:31},
+  NCE:{name:'Nice Côte d'Azur',city:'Nice',icao:'LFMN',lat:43.6584,lng:7.2159,pax:14},
+  LYS:{name:'Lyon Saint-Exupéry',city:'Lyon',icao:'LFLY',lat:45.7256,lng:5.0811,pax:12},
+  MRS:{name:'Marseille Provence',city:'Marseille',icao:'LFML',lat:43.4393,lng:5.2214,pax:10},
+  TLS:{name:'Toulouse Blagnac',city:'Toulouse',icao:'LFBO',lat:43.6293,lng:1.3678,pax:9},
+  BOD:{name:'Bordeaux Mérignac',city:'Bordeaux',icao:'LFBD',lat:44.8283,lng:-0.7155,pax:7},
+  NTE:{name:'Nantes Atlantique',city:'Nantes',icao:'LFRS',lat:47.1532,lng:-1.6108,pax:7},
+  MLH:{name:'Mulhouse EuroAirport',city:'Mulhouse',icao:'LFSB',lat:47.5896,lng:7.5299,pax:8},
+  LIL:{name:'Lille Lesquin',city:'Lille',icao:'LFQQ',lat:50.5636,lng:3.0886,pax:2},
+  SXB:{name:'Strasbourg Entzheim',city:'Strasbourg',icao:'LFST',lat:48.5383,lng:7.6283,pax:2},
+  MPL:{name:'Montpellier Méditerranée',city:'Montpellier',icao:'LFMT',lat:43.5762,lng:3.963,pax:3},
+  RNS:{name:'Rennes Saint-Jacques',city:'Rennes',icao:'LFRN',lat:48.0695,lng:-1.7348,pax:2},
+  BES:{name:'Brest Bretagne',city:'Brest',icao:'LFRB',lat:48.4479,lng:-4.4185,pax:2},
+  AJA:{name:'Ajaccio Napoléon Bonaparte',city:'Ajaccio',icao:'LFKJ',lat:41.9236,lng:8.8029,pax:3},
+  BIA:{name:'Bastia Poretta',city:'Bastia',icao:'LFKB',lat:42.5527,lng:9.4837,pax:2},
+  CLY:{name:'Calvi Sainte-Catherine',city:'Calvi',icao:'LFKC',lat:42.5308,lng:8.7931,pax:1},
+  FSC:{name:'Figari Sud Corse',city:'Figari',icao:'LFKG',lat:41.5006,lng:9.0978,pax:1},
+  BIQ:{name:'Biarritz Pays Basque',city:'Biarritz',icao:'LFBZ',lat:43.4683,lng:-1.5231,pax:1},
+  LDE:{name:'Tarbes Lourdes Pyrénées',city:'Lourdes',icao:'LFBT',lat:43.1787,lng:-0.0064,pax:2},
+  PUF:{name:'Pau Pyrénées',city:'Pau',icao:'LFBP',lat:43.38,lng:-0.4186,pax:1},
+  GNB:{name:'Grenoble Isère',city:'Grenoble',icao:'LFLS',lat:45.3629,lng:5.3294,pax:2},
+  CMF:{name:'Chambéry Savoie',city:'Chambéry',icao:'LFLB',lat:45.6381,lng:5.8802,pax:1},
+  NCY:{name:'Annecy Haute-Savoie',city:'Annecy',icao:'LFLI',lat:45.9292,lng:6.1003,pax:1},
+  DIJ:{name:'Dijon Bourgogne',city:'Dijon',icao:'LFSD',lat:47.2689,lng:5.09,pax:1},
+  AVN:{name:'Avignon Provence',city:'Avignon',icao:'LFMV',lat:43.9073,lng:4.9018,pax:1},
+  FNI:{name:'Nîmes Alès Camargue',city:'Nîmes',icao:'LFTW',lat:43.7574,lng:4.4163,pax:1},
+  CCF:{name:'Carcassonne',city:'Carcassonne',icao:'LFMK',lat:43.216,lng:2.3063,pax:1},
+  EGC:{name:'Bergerac Périgord',city:'Bergerac',icao:'LFBE',lat:44.8253,lng:0.5187,pax:1},
+  AGF:{name:'Agen La Garenne',city:'Agen',icao:'LFBA',lat:44.1747,lng:0.5906,pax:1},
+  LRT:{name:'Lorient Bretagne Sud',city:'Lorient',icao:'LFRH',lat:47.7606,lng:-3.44,pax:1},
+  RDZ:{name:'Rodez Aveyron',city:'Rodez',icao:'LFCR',lat:44.4079,lng:2.4826,pax:1},
+  LRH:{name:'La Rochelle Île de Ré',city:'La Rochelle',icao:'LFBH',lat:46.1792,lng:-1.1953,pax:1},
+  CFR:{name:'Caen Carpiquet',city:'Caen',icao:'LFRK',lat:49.1733,lng:-0.4497,pax:1},
+  LIG:{name:'Limoges Bellegarde',city:'Limoges',icao:'LFBL',lat:45.8628,lng:1.1794,pax:1},
+  PIS:{name:'Poitiers Biard',city:'Poitiers',icao:'LFBI',lat:46.5877,lng:0.3067,pax:1},
+  ETZ:{name:'Metz Nancy Lorraine',city:'Metz',icao:'LFJL',lat:48.9822,lng:6.2517,pax:1},
+  SNR:{name:'Saint-Nazaire Montoir',city:'Saint-Nazaire',icao:'LFRS',lat:47.3122,lng:-2.1567,pax:1},
+  VNE:{name:'Vannes Meucon',city:'Vannes',icao:'LFRV',lat:47.7233,lng:-2.7186,pax:1},
+  CER:{name:'Cherbourg Maupertus',city:'Cherbourg',icao:'LFRC',lat:49.6503,lng:-1.4703,pax:1},
 };
 
 const ALL_IATAS = Object.keys(AIRPORTS_FR);
@@ -453,9 +469,11 @@ function initMap(ap) {
   })}).addTo(mapObj).bindTooltip(ap.name||curIata, {direction:'top', offset:[0,-12]});
   radiusCircle = L.circle([ap.lat, ap.lng], {
     radius: searchRadius*1852,
-    color:'rgba(79,195,247,.18)', fillColor:'rgba(79,195,247,.04)',
+    color:'rgba(26,115,232,.15)', fillColor:'rgba(26,115,232,.03)',
     fillOpacity:1, weight:1, dashArray:'4 8'
   }).addTo(mapObj);
+  // Ajouter les marqueurs aéroports après init
+  setTimeout(addAirportMarkers, 100);
 }
 
 /* ── PLANE SVG ICON ── */
@@ -531,10 +549,75 @@ function selectAirport(iata) {
   // Move map
   if (mapObj) mapObj.flyTo([ap.lat, ap.lng], 9, {duration:1});
   if (radiusCircle) { radiusCircle.setLatLng([ap.lat, ap.lng]); radiusCircle.setRadius(searchRadius*1852); }
+  updateAirportMarkers();
   // Reload flights + show airport panel
   Object.values(markers).forEach(m=>m.remove()); markers={}; flights=[];
   setTimeout(()=>{ loadFlights(); loadAptTable(); }, 400);
   document.getElementById('aptPanel').classList.add('show');
+}
+
+
+/* ── MARKERS AÉROPORTS ── */
+let aptMarkers = {};
+
+function addAirportMarkers() {
+  // Zoom threshold : afficher labels seulement si zoom >= 7
+  const zoom = mapObj.getZoom();
+  Object.entries(AIRPORTS_FR).forEach(([iata, ap]) => {
+    if (aptMarkers[iata]) return; // déjà ajouté
+    const isSel = iata === curIata;
+    // Taille du point selon trafic
+    const big = (ap.pax||1) >= 7;
+    const med = (ap.pax||1) >= 3;
+    const dotSize = big ? 13 : med ? 10 : 8;
+    const icon = L.divIcon({
+      className: '',
+      html: `<div class="apm${isSel?' sel':''}">
+        <div class="apm-dot" style="width:${dotSize}px;height:${dotSize}px"></div>
+        <div class="apm-lbl">${iata}</div>
+      </div>`,
+      iconSize: [dotSize+40, dotSize+16],
+      iconAnchor: [(dotSize+40)/2, dotSize/2]
+    });
+    const m = L.marker([ap.lat, ap.lng], {icon, zIndexOffset:200}).addTo(mapObj);
+    m.on('click', () => selectAirportFromMap(iata));
+    aptMarkers[iata] = m;
+  });
+}
+
+function updateAirportMarkers() {
+  Object.entries(aptMarkers).forEach(([iata, m]) => {
+    const isSel = iata === curIata;
+    const ap = AIRPORTS_FR[iata];
+    const big = (ap.pax||1) >= 7;
+    const med = (ap.pax||1) >= 3;
+    const dotSize = big ? 13 : med ? 10 : 8;
+    m.setIcon(L.divIcon({
+      className: '',
+      html: `<div class="apm${isSel?' sel':''}">
+        <div class="apm-dot" style="width:${dotSize}px;height:${dotSize}px"></div>
+        <div class="apm-lbl">${iata}</div>
+      </div>`,
+      iconSize: [dotSize+40, dotSize+16],
+      iconAnchor: [(dotSize+40)/2, dotSize/2]
+    }));
+  });
+}
+
+function selectAirportFromMap(iata) {
+  const ap = AIRPORTS_FR[iata];
+  if (!ap) return;
+  curIata = iata;
+  document.getElementById('aptSearch').value = `${iata} — ${ap.name}`;
+  // Fly to airport
+  mapObj.flyTo([ap.lat, ap.lng], Math.max(mapObj.getZoom(), 9), {duration:.8});
+  if (radiusCircle) { radiusCircle.setLatLng([ap.lat, ap.lng]); radiusCircle.setRadius(searchRadius*1852); }
+  // Reload flights
+  Object.values(markers).forEach(m=>m.remove()); markers={}; flights=[];
+  setTimeout(()=>{ loadFlights(); loadAptTable(); }, 300);
+  // Open airport panel
+  document.getElementById('aptPanel').classList.add('show');
+  updateAirportMarkers();
 }
 
 /* ── LOAD FLIGHTS ── */
