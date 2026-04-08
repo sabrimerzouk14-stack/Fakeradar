@@ -502,13 +502,48 @@ async function loadFlights() {
       String(a.squawk||'').split('.')[0],
       false,0, a.dep||a.from_long||'', a.arr||a.to_long||'', a.t||a.desc||''
     ]);
-    updateLive(true); renderMap(); updateCount();
+    updateLive(true);
+    // Mise à jour fluide : si marqueurs existent, juste animer vers nouvelles positions
+    if(Object.keys(markers).length>0) {
+      updateFlightData(); // update data + animate, don't recreate markers
+    } else {
+      renderMap(); // premier chargement
+    }
+    updateCount();
   } catch(e) {
     updateLive(false);
     if (!flights.length) flights = demoFlights();
     else animateDemo();
     renderMap(); updateCount();
   }
+}
+
+// Met à jour les données de vol et anime vers nouvelles positions
+function updateFlightData(){
+  flights.forEach(f=>{
+    const call=(f[0]||'').trim()||'N/A';
+    const hdg=f[10]||0, gnd=f[8], sel=selCall===call;
+    const lat=parseFloat(f[6]), lng=parseFloat(f[5]);
+    if(isNaN(lat)||isNaN(lng)) return;
+    if(markers[call]){
+      const cur=markers[call].getLatLng();
+      markers[call].setIcon(planeIcon(hdg,sel,gnd));
+      if(sel)markers[call].setZIndexOffset(1000);
+      animatePlane(call,cur.lat,cur.lng,lat,lng,hdg,gnd,sel);
+    } else {
+      const m=L.marker([lat,lng],{icon:planeIcon(hdg,sel,gnd),zIndexOffset:sel?1000:0}).addTo(map);
+      m.on('click',()=>openFlight(call,f));
+      markers[call]=m;
+    }
+  });
+  // Supprimer les avions qui ont disparu
+  const calls=new Set(flights.map(f=>(f[0]||'').trim()));
+  Object.keys(markers).forEach(c=>{
+    if(!calls.has(c)){
+      if(_anims[c]){cancelAnimationFrame(_anims[c].raf);delete _anims[c];}
+      markers[c].remove();delete markers[c];
+    }
+  });
 }
 
 async function refreshFlights() {
@@ -538,33 +573,80 @@ function updateLive(live){
 function updateCount(){document.getElementById('tbCount').textContent=`${flights.length} vols`;}
 
 /* ── TRAIL ── */
+let _trailLastDraw = 0;
 function drawTrail(icao,lat,lng){
-  if(!icao)return; if(!posHist[icao])posHist[icao]=[];
-  posHist[icao].push([lat,lng]); if(posHist[icao].length>80)posHist[icao].shift();
+  if(!icao)return;
+  if(!posHist[icao])posHist[icao]=[];
+  // Ajouter point seulement si déplacement suffisant (évite doublons)
+  const last=posHist[icao][posHist[icao].length-1];
+  if(!last||Math.abs(lat-last[0])>0.0002||Math.abs(lng-last[1])>0.0002){
+    posHist[icao].push([lat,lng]);
+    if(posHist[icao].length>100)posHist[icao].shift();
+  }
+  // Redessiner la traîne seulement toutes les 2s (pas à chaque RAF)
+  const now=Date.now();
+  if(now-_trailLastDraw<2000) return;
+  _trailLastDraw=now;
   trailLines.forEach(l=>l.remove()); trailLines=[];
   const t=posHist[icao];
-  for(let i=1;i<t.length;i++){const r=i/t.length;const l=L.polyline([t[i-1],t[i]],{color:'#1A73E8',weight:1+r*2,opacity:.1+r*.7}).addTo(map);trailLines.push(l);}
+  for(let i=1;i<t.length;i++){
+    const r=i/t.length;
+    const l=L.polyline([t[i-1],t[i]],{
+      color:'#1A73E8',weight:1+r*2.5,opacity:.08+r*.75
+    }).addTo(map);
+    trailLines.push(l);
+  }
 }
 function clearTrail(){trailLines.forEach(l=>l.remove());trailLines=[];}
 
 /* ── RENDER MAP ── */
+// ── ANIMATION ENGINE ──
+// Chaque avion a sa propre animation RAF — ultra fluide
+const _anims = {}; // call -> {from, to, startTime, duration, hdg, gnd, sel}
+
+function easeInOut(t){ return t<0.5 ? 2*t*t : -1+(4-2*t)*t; }
+
+function animatePlane(call, fromLat, fromLng, toLat, toLng, hdg, gnd, sel) {
+  if (_anims[call]) cancelAnimationFrame(_anims[call].raf);
+  const duration = 11000; // ms — dure jusqu'au prochain refresh (12s)
+  const start = performance.now();
+  function frame(now) {
+    const raw = Math.min((now - start) / duration, 1);
+    const t = easeInOut(raw);
+    const lat = fromLat + (toLat - fromLat) * t;
+    const lng = fromLng + (toLng - fromLng) * t;
+    if (markers[call]) {
+      markers[call].setLatLng([lat, lng]);
+      if (sel) drawTrail(call, lat, lng);
+    }
+    if (raw < 1) _anims[call].raf = requestAnimationFrame(frame);
+  }
+  _anims[call] = { raf: requestAnimationFrame(frame) };
+}
+
 function renderMap(){
   const remove=Object.keys(markers).filter(c=>!flights.find(f=>(f[0]||'').trim()===c));
-  remove.forEach(c=>{markers[c].remove();delete markers[c];});
+  remove.forEach(c=>{
+    if(_anims[c]){ cancelAnimationFrame(_anims[c].raf); delete _anims[c]; }
+    markers[c].remove(); delete markers[c];
+  });
   flights.forEach(f=>{
     const call=(f[0]||'').trim()||'N/A';
-    const hdg=f[10]||0,gnd=f[8],sel=selCall===call,lat=f[6],lng=f[5];
+    const hdg=f[10]||0, gnd=f[8], sel=selCall===call;
+    const lat=parseFloat(f[6]), lng=parseFloat(f[5]);
+    if(isNaN(lat)||isNaN(lng)) return;
     if(markers[call]){
-      const cur=markers[call].getLatLng();
-      const st=12,dLat=(lat-cur.lat)/st,dLng=(lng-cur.lng)/st;let s=0;
-      const iv=setInterval(()=>{s++;markers[call].setLatLng([cur.lat+dLat*s,cur.lng+dLng*s]);if(s>=st)clearInterval(iv);},70);
+      const cur = markers[call].getLatLng();
       markers[call].setIcon(planeIcon(hdg,sel,gnd));
-      if(sel)markers[call].setZIndexOffset(1000);
+      if(sel) markers[call].setZIndexOffset(1000);
+      // Lance l'animation RAF depuis position courante vers nouvelle position
+      animatePlane(call, cur.lat, cur.lng, lat, lng, hdg, gnd, sel);
     } else {
       const m=L.marker([lat,lng],{icon:planeIcon(hdg,sel,gnd),zIndexOffset:sel?1000:0}).addTo(map);
-      m.on('click',()=>openFlight(call,f)); markers[call]=m;
+      m.on('click',()=>openFlight(call,f));
+      markers[call]=m;
+      if(sel) animatePlane(call, lat, lng, lat, lng, hdg, gnd, sel);
     }
-    if(sel)drawTrail(f[1]||f[0],lat,lng);
   });
 }
 
