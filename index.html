@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SkyView</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -18,7 +18,7 @@
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
-body{font-family:'IBM Plex Sans',sans-serif;color:var(--txt);background:var(--bg)}
+body{font-family:'Nunito',sans-serif;color:var(--txt);background:var(--bg)}
 
 #map{position:fixed;inset:0;z-index:0;transition:left .38s cubic-bezier(.4,0,.2,1)}
 #map.shifted{left:min(340px,88vw)}
@@ -41,7 +41,7 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--txt);background:var(--bg
   box-shadow:0 2px 12px rgba(0,0,0,.07);
 }
 .tb-logo{
-  font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;
+  font-family:'DM Mono',monospace;font-size:14px;font-weight:700;
   color:var(--sky);letter-spacing:.08em;flex-shrink:0;
   display:flex;align-items:center;gap:6px;
 }
@@ -56,7 +56,7 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--txt);background:var(--bg
   width:100%;background:#F4F6F9;
   border:1px solid var(--border2);border-radius:22px;
   padding:8px 16px 8px 38px;
-  font-family:'IBM Plex Sans',sans-serif;font-size:13px;
+  font-family:'Nunito',sans-serif;font-size:13px;
   color:var(--txt);outline:none;transition:.2s;
 }
 .tb-apt-input:focus{border-color:var(--sky);background:rgba(255,255,255,.1)}
@@ -79,13 +79,13 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--txt);background:var(--bg
 }
 .sugg-item:last-child{border-bottom:none}
 .sugg-item:hover,.sugg-item.active{background:#EEF4FF}
-.sugg-iata{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--sky);width:36px;flex-shrink:0}
+.sugg-iata{font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--sky);width:36px;flex-shrink:0}
 .sugg-name{font-size:12px;color:var(--txt);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sugg-city{font-size:11px;color:var(--txt3);flex-shrink:0}
 
 .tb-stats{display:flex;gap:10px;flex-shrink:0}
 .tb-stat{text-align:center}
-.tb-stat-v{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:var(--sky)}
+.tb-stat-v{font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--sky)}
 .tb-stat-l{font-size:8px;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em}
 
 .tb-btn{width:30px;height:30px;border-radius:50%;background:#F4F6F9;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0;transition:.15s}
@@ -100,10 +100,10 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--txt);background:var(--bg
 .live-badge{display:flex;align-items:center;gap:6px;background:#FFFFFF;border:1px solid rgba(46,125,50,.2);border-radius:50px;padding:5px 12px;box-shadow:0 1px 6px rgba(0,0,0,.08)}
 .live-dot{width:6px;height:6px;border-radius:50%;background:var(--grn);box-shadow:0 0 6px var(--grn);animation:blink 1.2s ease-in-out infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.live-txt{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--grn);letter-spacing:.1em}
+.live-txt{font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:var(--grn);letter-spacing:.1em}
 
 .radius-ctrl{display:flex;align-items:center;gap:8px;background:#FFFFFF;border:1px solid var(--border2);border-radius:50px;padding:5px 12px;box-shadow:0 1px 6px rgba(0,0,0,.08)}
-.rc-val{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sky);min-width:52px}
+.rc-val{font-family:'DM Mono',monospace;font-size:10px;color:var(--sky);min-width:52px}
 .rc-slider{width:80px;accent-color:var(--sky);cursor:pointer}
 
 /* ═══════════════════════════════
@@ -126,7 +126,7 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--txt);background:var(--bg
 .apt-hbar{width:34px;height:3px;border-radius:2px;background:var(--border2)}
 .apt-head{padding:0 16px 0;flex-shrink:0}
 .apt-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
-.apt-title{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:#FFF}
+.apt-title{font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:#FFF}
 .apt-sub{font-size:10px;color:var(--txt3);margin-bottom:8px}
 .apt-close{font-size:16px;color:var(--txt3);cursor:pointer}
 .apt-tabs{display:flex;gap:0;border-bottom:1px solid var(--border)}
@@ -143,17 +143,17 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--txt);background:var(--bg
 .ft-row:active{background:#EEF4FF}
 
 /* Vol number — grand et lisible */
-.ft-num{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:var(--sky);flex:1.1;letter-spacing:.04em}
+.ft-num{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--sky);flex:1.1;letter-spacing:.04em}
 
 /* Destination — nom complet */
 .ft-dest{flex:2;min-width:0}
-.ft-dest-iata{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--txt);margin-bottom:1px}
+.ft-dest-iata{font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:var(--txt);margin-bottom:1px}
 .ft-dest-name{font-size:10px;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* Heure — colonne propre */
 .ft-time{flex:.8;text-align:right}
-.ft-time-sch{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--txt)}
-.ft-time-act{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--amber);margin-top:1px}
+.ft-time-sch{font-family:'DM Mono',monospace;font-size:14px;font-weight:600;color:var(--txt)}
+.ft-time-act{font-family:'DM Mono',monospace;font-size:11px;color:var(--amber);margin-top:1px}
 
 /* Statut */
 .ft-st{flex:.9;text-align:right}
@@ -194,11 +194,11 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--txt);background:var(--bg
 .sp-photo img{width:100%;height:100%;object-fit:cover;display:block}
 .sp-photo-fb{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
 .sp-photo-fb-ico{font-size:42px;opacity:.6}
-.sp-photo-fb-txt{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--txt3);letter-spacing:.08em}
+.sp-photo-fb-txt{font-family:'DM Mono',monospace;font-size:10px;color:var(--txt3);letter-spacing:.08em}
 .sp-photo-airline{position:absolute;bottom:8px;left:10px;background:rgba(255,255,255,.92);border:1px solid var(--border2);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--txt)}
 .sp-photo-credit{position:absolute;bottom:8px;right:8px;font-size:8px;color:rgba(255,255,255,.4);font-style:italic}
 .sp-toprow{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 2px;flex-shrink:0}
-.sp-callsign{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--txt)}
+.sp-callsign{font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:var(--txt)}
 .sp-badges{display:flex;gap:5px}
 .sp-badge{font-size:8px;font-weight:700;padding:3px 7px;border-radius:4px;letter-spacing:.06em;text-transform:uppercase}
 .sp-badge.vol{background:rgba(26,115,232,.1);color:var(--sky);border:1px solid rgba(26,115,232,.25)}
@@ -208,10 +208,10 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--txt);background:var(--bg
 /* Route */
 .sp-route{display:flex;align-items:center;padding:12px 14px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-shrink:0;background:#F8FAFC}
 .sp-apt{flex:1}
-.sp-apt-code{font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:700;color:var(--txt);line-height:1;margin-bottom:2px}
+.sp-apt-code{font-family:'DM Mono',monospace;font-size:30px;font-weight:700;color:var(--txt);line-height:1;margin-bottom:2px}
 .sp-apt-name{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
 .sp-time-block{display:flex;flex-direction:column;gap:1px}
-.sp-time{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--txt2)}
+.sp-time{font-family:'DM Mono',monospace;font-size:11px;color:var(--txt2)}
 .sp-time .tl{font-size:8px;color:var(--txt3);letter-spacing:.05em;margin-right:3px}
 .sp-time.delayed{color:var(--red);text-decoration:line-through}
 .sp-time.actual{color:var(--amber)}
@@ -220,12 +220,12 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--txt);background:var(--bg
 .sp-prog-bar{position:relative;width:100%;height:2px;background:var(--border2);border-radius:1px}
 .sp-prog-fill{height:100%;background:linear-gradient(90deg,#1A73E8,#4FC3F7);border-radius:1px;transition:width .5s}
 .sp-prog-plane{position:absolute;top:50%;transform:translate(-50%,-50%);transition:left .5s}
-.sp-prog-dists{display:flex;justify-content:space-between;width:100%;font-size:8px;color:var(--txt3);font-family:'IBM Plex Mono',monospace}
+.sp-prog-dists{display:flex;justify-content:space-between;width:100%;font-size:8px;color:var(--txt3);font-family:'DM Mono',monospace}
 /* Grid */
 .sp-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
 .sp-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border2);border-bottom:1px solid var(--border)}
 .sp-cell{background:#F8F9FB;padding:11px 8px;text-align:center}
-.sp-cell-v{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:var(--txt);margin-bottom:2px}
+.sp-cell-v{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--txt);margin-bottom:2px}
 .sp-cell-v.hi{color:var(--sky)}
 .sp-cell-v.up{color:var(--grn)}
 .sp-cell-v.dn{color:var(--red)}
@@ -234,12 +234,12 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--txt);background:var(--bg
 .sp-info-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
 .sp-info-row:last-child{border-bottom:none}
 .sp-info-l{font-size:11px;color:var(--txt2)}
-.sp-info-v{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--txt);text-align:right}
+.sp-info-v{font-family:'DM Mono',monospace;font-size:11px;color:var(--txt);text-align:right}
 
 .ld{text-align:center;padding:32px 16px}
 .ld-ring{width:26px;height:26px;border:2px solid var(--border2);border-top-color:var(--sky);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
-.ld-txt{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--txt3);letter-spacing:.08em}
-.ld-err{font-size:11px;color:var(--red);font-family:'IBM Plex Mono',monospace;text-align:center;padding:8px}
+.ld-txt{font-family:'DM Mono',monospace;font-size:10px;color:var(--txt3);letter-spacing:.08em}
+.ld-err{font-size:11px;color:var(--red);font-family:'DM Mono',monospace;text-align:center;padding:8px}
 </style>
 </head>
 <body>
@@ -616,8 +616,15 @@ function renderAptTable(items, isDep) {
     const act   = isDep ? (fl.departure?.actualTime?.local||fl.departure?.revisedTime?.local) : (fl.arrival?.actualTime?.local||fl.arrival?.revisedTime?.local);
     const status = fl.status||'Unknown';
     const delay  = fl.departure?.delay||fl.arrival?.delay||0;
-    const schT  = sch ? sch.split('T')[1]?.substring(0,5)||sch : '—';
-    const actT  = act ? act.split('T')[1]?.substring(0,5)||act : '';
+    // Extraire uniquement l'heure locale (HH:MM) sans UTC
+    const parseTime = (t) => {
+      if (!t) return '';
+      // Format: "2024-04-08T14:30:00+02:00" ou "14:30" ou "14:30:00"
+      const part = t.includes('T') ? t.split('T')[1] : t;
+      return part.substring(0,5); // prend juste HH:MM
+    };
+    const schT = sch ? parseTime(sch) : '—';
+    const actT = act ? parseTime(act) : '';
     const stKey = status==='Cancelled'?'can':status==='Delayed'?'del':status==='Arrived'||status==='Departed'?'arr':status==='EnRoute'?'dep':'ok';
     const stLbl = stMap[status]||status;
     const logo  = alEmoji[alIata]||'✈';
