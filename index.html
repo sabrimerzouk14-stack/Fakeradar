@@ -910,7 +910,7 @@ function renderTable(items,isDep){
   const alE={'AF':'🇫🇷','KL':'🇳🇱','LH':'🇩🇪','BA':'🇬🇧','FR':'💛','EZY':'🟠','VLG':'🟡','IBE':'🇪🇸','TK':'🇹🇷','TP':'🇵🇹','AZ':'🇮🇹','XK':'🏝️','TO':'🟢','W6':'🟣','SK':'🇸🇪','LX':'🇨🇭','OS':'🇦🇹','U2':'🟠','SN':'🇧🇪','AY':'🇫🇮'};
   const stM={Departed:'DÉCOLLÉ',Arrived:'ATTERRI',Delayed:'RETARDÉ',Cancelled:'ANNULÉ',Scheduled:'PRÉVU',EnRoute:'EN VOL',Diverted:'DÉROUTÉ',Unknown:'—'};
   const pt=t=>{if(!t)return'';const m=String(t).match(/(\d{2}):(\d{2})/);return m?m[1]+':'+m[2]:'—';};
-  document.getElementById('aptTable').innerHTML=items.map(fl=>{
+  document.getElementById('aptTable').innerHTML=items.map((fl,_i)=>{
     const alI=fl.airline?.iata||'';
     const num=fl.number||`${alI}${fl.flightNumber||''}`;
     const dest=isDep?(fl.arrival?.airport?.iata||'—'):(fl.departure?.airport?.iata||'—');
@@ -920,7 +920,7 @@ function renderTable(items,isDep){
     const st=fl.status||'Unknown';const delay=fl.departure?.delay||fl.arrival?.delay||0;
     const schT=pt(sch),actT=pt(act);const hasAct=actT&&actT!==schT;
     const stK=st==='Cancelled'?'can':st==='Delayed'?'del':st==='Arrived'||st==='Departed'?'arr':st==='EnRoute'?'dep':'ok';
-    return `<div class="ft-row" onclick="openFlightFromTable(${_tableItems.indexOf(fl)})" style="cursor:pointer;-webkit-tap-highlight-color:rgba(26,115,232,.1)">
+    return `<div class="ft-row" onclick="openFlightFromTable(${_i})" style="cursor:pointer;-webkit-tap-highlight-color:rgba(26,115,232,.1)">
       <div class="ft-airline">${alE[alI]||'✈'}</div>
       <div class="ft-num">${num}</div>
       <div class="ft-dest"><div class="ft-dest-iata">${dest}</div><div class="ft-dest-name">${dn}</div></div>
@@ -936,10 +936,24 @@ function renderTable(items,isDep){
 
 function showGnd(){
   const g=flights.filter(f=>f[8]);
-  document.getElementById('aptTable').innerHTML=g.length?g.map(f=>{
+  document.getElementById('aptTable').innerHTML=g.length?g.map((f,gi)=>{
     const c=(f[0]||'').trim();const ac=getAlCode(c);const ad=ac?AL[ac]:null;
-    return `<div class="ft-row"><div class="ft-airline">${ad?.l||'✈'}</div><div class="ft-num">${c}</div><div class="ft-dest"><div class="ft-dest-iata">${f[20]||'—'}</div><div class="ft-dest-name">Au sol</div></div><div class="ft-time"><div class="ft-time-sch">${(f[1]||'').toUpperCase()}</div></div><div class="ft-st"><span class="st st-brd">AU SOL</span></div></div>`;
+    return `<div class="ft-row" onclick="openFlightFromRadar('${c}')" style="cursor:pointer">
+      <div class="ft-airline">${ad?.l||'✈'}</div>
+      <div class="ft-num">${c}</div>
+      <div class="ft-dest"><div class="ft-dest-iata">${f[20]||'—'}</div><div class="ft-dest-name">Au sol · ${(f[1]||'').toUpperCase()}</div></div>
+      <div class="ft-time"><div class="ft-time-sch">—</div></div>
+      <div class="ft-st"><span class="st st-brd">AU SOL</span></div>
+    </div>`;
   }).join(''):'<div class="ld"><div class="ld-txt">AUCUN VOL AU SOL</div></div>';
+}
+
+// Ouvrir un avion au sol depuis la liste (utilise les données radar)
+function openFlightFromRadar(call){
+  const f=flights.find(x=>(x[0]||'').trim()===call);
+  if(!f)return;
+  haptic(12);
+  openFlight(call,f);
 }
 
 function switchAptTab(t){
