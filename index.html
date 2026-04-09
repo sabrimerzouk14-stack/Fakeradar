@@ -823,8 +823,9 @@ async function loadAptTable(){
 /* ── OPEN FLIGHT FROM TABLE (départs/arrivées) ── */
 function openFlightFromTable(idx){
   haptic(12);
+  alert("idx="+idx+" items="+_tableItems.length);
   const fl=_tableItems[idx];
-  if(!fl)return;
+  if(!fl){alert("fl null!");return;}
 
   const alI=fl.airline?.iata||'';
   const num=fl.number||`${alI}${fl.flightNumber||''}`;
