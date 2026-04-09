@@ -149,8 +149,8 @@ body{font-family:'Nunito',sans-serif;color:var(--txt);background:var(--bg)}
 /* TABLE */
 .ft-head{display:flex;align-items:center;padding:7px 14px;background:var(--bg);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:2}
 .ft-hc{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)}
-.ft-row{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--b);cursor:pointer;transition:.12s;touch-action:manipulation;-webkit-user-select:none;user-select:none}
-.ft-row:hover{background:#F8FAFD}
+.ft-row{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--b);cursor:pointer;transition:.12s;touch-action:manipulation;-webkit-user-select:none;user-select:none;width:100%;background:none;border:none;border-bottom:1px solid var(--b);text-align:left;font-family:inherit}
+.ft-row:hover{background:#F8FAFD}.ft-row:active{background:#EEF4FF}
 .ft-row:active{background:#EEF4FF}
 .ft-airline{width:32px;flex-shrink:0;font-size:16px;text-align:center}
 .ft-num{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:var(--blue);flex:1.1;letter-spacing:.02em}
@@ -921,7 +921,7 @@ function renderTable(items,isDep){
     const st=fl.status||'Unknown';const delay=fl.departure?.delay||fl.arrival?.delay||0;
     const schT=pt(sch),actT=pt(act);const hasAct=actT&&actT!==schT;
     const stK=st==='Cancelled'?'can':st==='Delayed'?'del':st==='Arrived'||st==='Departed'?'arr':st==='EnRoute'?'dep':'ok';
-    return `<div class="ft-row" data-idx="${_i}" style="cursor:pointer">
+    return `<button class="ft-row" onclick="openFlightFromTable(${_i})">
       <div class="ft-airline">${alE[alI]||'✈'}</div>
       <div class="ft-num">${num}</div>
       <div class="ft-dest"><div class="ft-dest-iata">${dest}</div><div class="ft-dest-name">${dn}</div></div>
@@ -931,7 +931,7 @@ function renderTable(items,isDep){
         ${delay>0&&stK==='del'?`<div class="ft-time-del">+${delay}mn</div>`:''}
       </div>
       <div class="ft-st"><span class="st st-${stK}">${stM[st]||st}</span></div>
-    </div>`;
+    </button>`;
   }).join('')||'<div class="ld"><div class="ld-txt">AUCUN VOL</div></div>';
 }
 
@@ -939,7 +939,7 @@ function showGnd(){
   const g=flights.filter(f=>f[8]);
   document.getElementById('aptTable').innerHTML=g.length?g.map((f,gi)=>{
     const c=(f[0]||'').trim();const ac=getAlCode(c);const ad=ac?AL[ac]:null;
-    return `<div class="ft-row" data-call="${c}" style="cursor:pointer">
+    return `<button class="ft-row" onclick="openFlightFromRadar('${c}')">
       <div class="ft-airline">${ad?.l||'✈'}</div>
       <div class="ft-num">${c}</div>
       <div class="ft-dest"><div class="ft-dest-iata">${f[20]||'—'}</div><div class="ft-dest-name">Au sol · ${(f[1]||'').toUpperCase()}</div></div>
@@ -1000,28 +1000,7 @@ window.addEventListener('load',()=>{
 
   // Touch: track start position, fire on touchend only if no scroll
   let _tStartY = 0, _tStartX = 0, _tRow = null;
-  // Listener sur .apt-body — existe dans le DOM dès le départ
-  const aptBodyEl = document.querySelector('.apt-body');
-  let _tSY=0, _tSX=0, _tR=null;
-
-  aptBodyEl.addEventListener('touchstart', e => {
-    _tR = e.target.closest('[data-idx],[data-call]');
-    _tSY = e.touches[0].clientY;
-    _tSX = e.touches[0].clientX;
-  }, {passive:true});
-
-  aptBodyEl.addEventListener('touchend', e => {
-    if (!_tR) return;
-    const dy = Math.abs(e.changedTouches[0].clientY - _tSY);
-    const dx = Math.abs(e.changedTouches[0].clientX - _tSX);
-    if (dy < 12 && dx < 12) { handleTableTap(_tR); }
-    _tR = null;
-  }, {passive:true});
-
-  aptBodyEl.addEventListener('click', e => {
-    const r = e.target.closest('[data-idx],[data-call]');
-    if (r) handleTableTap(r);
-  });
+  // Boutons natifs — pas besoin de JS pour les touches
 });
 </script>
 </body>
