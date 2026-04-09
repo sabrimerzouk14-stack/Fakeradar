@@ -12,35 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js">
-/* ── GLOBAL TAP HANDLER — fonctionne sur tous les mobiles ── */
-(function(){
-  var t0x=0, t0y=0;
-  document.addEventListener('touchstart', function(e){
-    t0x = e.touches[0].clientX;
-    t0y = e.touches[0].clientY;
-  }, true);
-  
-  document.addEventListener('touchend', function(e){
-    var dx = Math.abs(e.changedTouches[0].clientX - t0x);
-    var dy = Math.abs(e.changedTouches[0].clientY - t0y);
-    if(dx > 15 || dy > 15) return; // scroll, pas un tap
-    
-    var el = e.target;
-    // Remonter jusqu'à ft-row
-    for(var i=0; i<8; i++){
-      if(!el) break;
-      if(el.classList && el.classList.contains('ft-row')){
-        e.preventDefault();
-        var idx = el.getAttribute('data-idx');
-        var call = el.getAttribute('data-call');
-        if(idx !== null) openFlightFromTable(parseInt(idx));
-        else if(call) openFlightFromRadar(call);
-        return;
-      }
-      el = el.parentElement;
-    }
-  }, true); // capture phase = avant tout autre handler
-})();
+// Events attachés directement sur les éléments
 
 </script>
 <style>
@@ -174,13 +146,13 @@ body{font-family:'Nunito',sans-serif;color:var(--txt);background:var(--bg)}
 .apt-tab-ico{font-size:15px;line-height:1}
 .apt-tab-lbl{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .apt-tab.on{color:var(--blue);border-bottom-color:var(--blue)}
-.apt-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none}
+.apt-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none;touch-action:pan-y;}
 .apt-body::-webkit-scrollbar{display:none}
 
 /* TABLE */
 .ft-head{display:flex;align-items:center;padding:7px 14px;background:var(--bg);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:2}
 .ft-hc{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)}
-.ft-row{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--b);cursor:pointer;transition:.12s;touch-action:manipulation;-webkit-user-select:none;user-select:none;width:100%;background:none;border:none;border-bottom:1px solid var(--b);text-align:left;font-family:inherit}
+.ft-row{display:flex;align-items:center;padding:14px 14px;border-bottom:1px solid var(--b);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:rgba(26,115,232,.15);user-select:none;}
 .ft-row:hover{background:#F8FAFD}.ft-row:active{background:#EEF4FF}
 .ft-row:active{background:#EEF4FF}
 .ft-airline{width:32px;flex-shrink:0;font-size:16px;text-align:center}
@@ -968,10 +940,6 @@ function renderTable(items,isDep){
   // Attacher les événements APRÈS injection HTML — seule méthode fiable iOS
   document.getElementById('aptTable').querySelectorAll('.ft-row').forEach((el,i)=>{
     el.addEventListener('click',()=>openFlightFromTable(i));
-    el.addEventListener('touchend',e=>{
-      e.preventDefault();
-      openFlightFromTable(i);
-    },{passive:false});
   });
 }
 
@@ -993,7 +961,6 @@ function showGnd(){
     if(!g[i])return;
     const call=(g[i][0]||'').trim();
     el.addEventListener('click',()=>openFlightFromRadar(call));
-    el.addEventListener('touchend',e=>{e.preventDefault();openFlightFromRadar(call);},{passive:false});
   });
 }
 
@@ -1043,35 +1010,7 @@ window.addEventListener('load',()=>{
   // Boutons natifs — pas besoin de JS pour les touches
 });
 
-/* ── GLOBAL TAP HANDLER — fonctionne sur tous les mobiles ── */
-(function(){
-  var t0x=0, t0y=0;
-  document.addEventListener('touchstart', function(e){
-    t0x = e.touches[0].clientX;
-    t0y = e.touches[0].clientY;
-  }, true);
-  
-  document.addEventListener('touchend', function(e){
-    var dx = Math.abs(e.changedTouches[0].clientX - t0x);
-    var dy = Math.abs(e.changedTouches[0].clientY - t0y);
-    if(dx > 15 || dy > 15) return; // scroll, pas un tap
-    
-    var el = e.target;
-    // Remonter jusqu'à ft-row
-    for(var i=0; i<8; i++){
-      if(!el) break;
-      if(el.classList && el.classList.contains('ft-row')){
-        e.preventDefault();
-        var idx = el.getAttribute('data-idx');
-        var call = el.getAttribute('data-call');
-        if(idx !== null) openFlightFromTable(parseInt(idx));
-        else if(call) openFlightFromRadar(call);
-        return;
-      }
-      el = el.parentElement;
-    }
-  }, true); // capture phase = avant tout autre handler
-})();
+// Events attachés directement sur les éléments
 
 </script>
 </body>
