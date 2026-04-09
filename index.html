@@ -149,7 +149,7 @@ body{font-family:'Nunito',sans-serif;color:var(--txt);background:var(--bg)}
 /* TABLE */
 .ft-head{display:flex;align-items:center;padding:7px 14px;background:var(--bg);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:2}
 .ft-hc{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)}
-.ft-row{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--b);cursor:pointer;transition:.12s}
+.ft-row{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--b);cursor:pointer;transition:.12s;touch-action:manipulation;-webkit-user-select:none;user-select:none}
 .ft-row:hover{background:#F8FAFD}
 .ft-row:active{background:#EEF4FF}
 .ft-airline{width:32px;flex-shrink:0;font-size:16px;text-align:center}
@@ -182,7 +182,6 @@ body{font-family:'Nunito',sans-serif;color:var(--txt);background:var(--bg)}
 <body>
 <div id="map"></div>
 <div class="plane-tooltip" id="planeTip"></div>
-<div id="dbg" style="position:fixed;bottom:80px;right:8px;z-index:9999;background:rgba(0,0,0,.7);color:#0f0;font-family:monospace;font-size:10px;padding:6px 10px;border-radius:8px;max-width:200px;display:none;pointer-events:none"></div>
 
 <div class="topbar">
   <div class="tb-logo">
@@ -1001,30 +1000,27 @@ window.addEventListener('load',()=>{
 
   // Touch: track start position, fire on touchend only if no scroll
   let _tStartY = 0, _tStartX = 0, _tRow = null;
-  const dbg = document.getElementById('dbg');
-  function log(msg){ dbg.style.display='block'; dbg.textContent=msg; setTimeout(()=>dbg.style.display='none',3000); }
+  // Listener sur .apt-body — existe dans le DOM dès le départ
+  const aptBodyEl = document.querySelector('.apt-body');
+  let _tSY=0, _tSX=0, _tR=null;
 
-  document.getElementById('aptPanel').addEventListener('touchstart', e => {
-    _tRow = e.target.closest('.ft-row');
-    _tStartY = e.touches[0].clientY;
-    _tStartX = e.touches[0].clientX;
-    log('touchstart: ' + (_tRow ? 'row idx='+_tRow.dataset.idx : 'no row') + ' tag='+e.target.tagName);
-  }, {passive: true});
+  aptBodyEl.addEventListener('touchstart', e => {
+    _tR = e.target.closest('[data-idx],[data-call]');
+    _tSY = e.touches[0].clientY;
+    _tSX = e.touches[0].clientX;
+  }, {passive:true});
 
-  document.getElementById('aptPanel').addEventListener('touchend', e => {
-    const dy = Math.abs(e.changedTouches[0].clientY - _tStartY);
-    const dx = Math.abs(e.changedTouches[0].clientX - _tStartX);
-    log('touchend: row='+!!_tRow+' dy='+Math.round(dy)+' dx='+Math.round(dx)+' idx='+(_tRow?.dataset?.idx));
-    if (!_tRow) return;
-    if (dy < 10 && dx < 10) {
-      handleTableTap(_tRow);
-    }
-    _tRow = null;
-  }, {passive: true});
+  aptBodyEl.addEventListener('touchend', e => {
+    if (!_tR) return;
+    const dy = Math.abs(e.changedTouches[0].clientY - _tSY);
+    const dx = Math.abs(e.changedTouches[0].clientX - _tSX);
+    if (dy < 12 && dx < 12) { handleTableTap(_tR); }
+    _tR = null;
+  }, {passive:true});
 
-  // Click pour desktop
-  document.getElementById('aptPanel').addEventListener('click', e => {
-    handleTableTap(e.target.closest('.ft-row'));
+  aptBodyEl.addEventListener('click', e => {
+    const r = e.target.closest('[data-idx],[data-call]');
+    if (r) handleTableTap(r);
   });
 });
 </script>
