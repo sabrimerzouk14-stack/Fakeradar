@@ -784,6 +784,55 @@ function initSwipe(){
 
 
 
+
+/* ── PHOTO PAR NUMÉRO DE VOL (quand le type n'est pas dans les données) ── */
+const _flightTypeCache = {};
+
+async function fetchPhotoByFlightNum(flightNum, alCode) {
+  const el = document.getElementById('spPhoto');
+  const alData = alCode ? AL[alCode] : null;
+  const badge = alData ? `<div class="sp-photo-airline">${alData.l} ${alData.n}</div>` : '';
+
+  // Cache
+  if (_flightTypeCache[flightNum]) {
+    fetchPhotoByTypeAndAirline(_flightTypeCache[flightNum], alCode);
+    return;
+  }
+
+  try {
+    // AeroDataBox: chercher le type via le numéro de vol
+    const clean = flightNum.replace(/\s/g, '');
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const url = `https://aerodatabox.p.rapidapi.com/flights/number/${encodeURIComponent(clean)}/${dateStr}`;
+    const r = await fetch(url, {
+      headers: {
+        'x-rapidapi-host': 'aerodatabox.p.rapidapi.com',
+        'x-rapidapi-key': '6ba60a59eamshceaf2a48185646cp13a77bjsnf3305db0de2c'
+      },
+      signal: AbortSignal.timeout(6000)
+    });
+    if (r.ok) {
+      const d = await r.json();
+      // Peut retourner un array ou un objet
+      const flight = Array.isArray(d) ? d[0] : d;
+      const type = flight?.aircraft?.model || flight?.aircraft?.icao || '';
+      if (type) {
+        _flightTypeCache[flightNum] = type;
+        fetchPhotoByTypeAndAirline(type, alCode);
+        return;
+      }
+    }
+  } catch(e) {}
+
+  // Fallback: photo par compagnie si pas de type trouvé
+  if (alCode) {
+    fetchPhotoByAirline(alCode);
+  } else {
+    el.innerHTML = `<div class="sp-photo-fb"><div class="sp-photo-fb-ico">${alData?.l||'✈'}</div></div>${badge}`;
+  }
+}
+
 /* ── PHOTO PAR TYPE + COMPAGNIE ── */
 const _typePhotoCache = {};
 
@@ -1123,15 +1172,16 @@ function openFlightFromTable(idx){
   // acType géré dans le bloc photo ci-dessous
   document.getElementById('spPhoto').innerHTML=`<div class="sp-photo-fb"><div class="sp-photo-fb-ico">${AL[alI]?.l||'✈'}</div></div>`;
 
-  // Extraire le type depuis tous les champs possibles d'AeroDataBox
-  const typeRaw = fl.aircraft?.model        // ex: "Airbus A320"
-               || fl.aircraft?.icao         // ex: "A320"  
-               || fl.aircraft?.type         // ex: "A320neo"
-               || fl.aircraft?.reg          // immatriculation si rien d'autre
-               || '';
+  // Extraire le type depuis les données AeroDataBox
+  const typeRaw = fl.aircraft?.model || fl.aircraft?.icao || fl.aircraft?.type || '';
   
-  // Toujours chercher une photo — même sans type on a la compagnie
-  fetchPhotoByTypeAndAirline(typeRaw, alI);
+  if (typeRaw) {
+    // Type connu directement
+    fetchPhotoByTypeAndAirline(typeRaw, alI);
+  } else {
+    // Type inconnu → chercher via AeroDataBox par numéro de vol
+    fetchPhotoByFlightNum(num, alI);
+  }
 
   // Ouvrir le panneau
   document.getElementById('sidePanel').classList.add('show');
