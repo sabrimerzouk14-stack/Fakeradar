@@ -773,6 +773,79 @@ function initSwipe(){
   });
 }
 
+
+/* ── PHOTO PAR NUMÉRO DE VOL ── */
+async function fetchPhotoByFlight(flightNum, alCode, acType) {
+  const el = document.getElementById('spPhoto');
+  const alData = alCode ? AL[alCode] : null;
+  const badge = alData ? `<div class="sp-photo-airline">${alData.l} ${alData.n}</div>` : '';
+  try {
+    // Planespotters supporte la recherche par flight number
+    const r = await fetch(`https://api.planespotters.net/pub/photos/flight/${encodeURIComponent(flightNum.replace(/\s/g,''))}`, {signal: AbortSignal.timeout(6000)});
+    if (r.ok) {
+      const d = await r.json();
+      if (d.photos?.length > 0) {
+        const p = d.photos[0];
+        const img = p.thumbnail_large?.src || p.thumbnail?.src;
+        if (img) {
+          el.innerHTML = `<img src="${img}" alt="${flightNum}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.innerHTML='<div class=sp-photo-fb><div class=sp-photo-fb-ico>✈</div></div>'">${badge}<div class="sp-photo-credit">© ${p.photographer||''}</div>`;
+          return;
+        }
+      }
+    }
+  } catch(e) {}
+  // Fallback: photo par type d'avion
+  if (acType) fetchPhotoByType(acType, alCode);
+  else el.innerHTML = `<div class="sp-photo-fb"><div class="sp-photo-fb-ico">${alData?.l||'✈'}</div></div>${badge}`;
+}
+
+/* ── PHOTO PAR TYPE D'AVION ── */
+async function fetchPhotoByType(acType, alCode) {
+  const el = document.getElementById('spPhoto');
+  const alData = alCode ? AL[alCode] : null;
+  const badge = alData ? `<div class="sp-photo-airline">${alData.l} ${alData.n}</div>` : '';
+  // Nettoyer le type: "Airbus A320" → "A320", "Boeing 737" → "B737"
+  const typeClean = acType.replace(/airbus/i,'').replace(/boeing/i,'B').trim().split(' ')[0];
+  try {
+    const r = await fetch(`https://api.planespotters.net/pub/photos/type/${encodeURIComponent(typeClean)}`, {signal: AbortSignal.timeout(6000)});
+    if (r.ok) {
+      const d = await r.json();
+      if (d.photos?.length > 0) {
+        // Chercher une photo de la bonne compagnie si possible
+        const match = d.photos.find(p => p.airline?.iata === alCode) || d.photos[0];
+        const img = match.thumbnail_large?.src || match.thumbnail?.src;
+        if (img) {
+          el.innerHTML = `<img src="${img}" alt="${acType}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.innerHTML='<div class=sp-photo-fb><div class=sp-photo-fb-ico>✈</div></div>'">${badge}<div class="sp-photo-credit">© ${match.photographer||''}</div>`;
+          return;
+        }
+      }
+    }
+  } catch(e) {}
+  el.innerHTML = `<div class="sp-photo-fb"><div class="sp-photo-fb-ico">${alData?.l||'✈'}</div></div>${badge}`;
+}
+
+/* ── PHOTO PAR COMPAGNIE ── */
+async function fetchPhotoByAirline(alCode) {
+  const el = document.getElementById('spPhoto');
+  const alData = alCode ? AL[alCode] : null;
+  const badge = alData ? `<div class="sp-photo-airline">${alData.l} ${alData.n}</div>` : '';
+  try {
+    const r = await fetch(`https://api.planespotters.net/pub/photos/airline/${encodeURIComponent(alCode)}`, {signal: AbortSignal.timeout(6000)});
+    if (r.ok) {
+      const d = await r.json();
+      if (d.photos?.length > 0) {
+        const p = d.photos[Math.floor(Math.random()*Math.min(d.photos.length,5))];
+        const img = p.thumbnail_large?.src || p.thumbnail?.src;
+        if (img) {
+          el.innerHTML = `<img src="${img}" alt="${alCode}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.innerHTML='<div class=sp-photo-fb><div class=sp-photo-fb-ico>✈</div></div>'">${badge}<div class="sp-photo-credit">© ${p.photographer||''}</div>`;
+          return;
+        }
+      }
+    }
+  } catch(e) {}
+  el.innerHTML = `<div class="sp-photo-fb"><div class="sp-photo-fb-ico">${alData?.l||'✈'}</div></div>${badge}`;
+}
+
 /* ── FETCH ROUTE ── */
 async function fetchRoute(call){
   if(!call||call.length<3)return;
@@ -947,11 +1020,22 @@ function openFlightFromTable(idx){
     fl.departure?.gate?'Porte '+fl.departure.gate:''
   ].filter(Boolean).join(' · ')||'—';
 
-  // Photo via immatriculation si dispo
+  // Photo avion — plusieurs stratégies selon les données dispo
   const reg=fl.aircraft?.reg||'';
   const icao=fl.aircraft?.icao24||'';
+  const acType=fl.aircraft?.model||fl.aircraft?.reg||'';
   document.getElementById('spPhoto').innerHTML=`<div class="sp-photo-fb"><div class="sp-photo-fb-ico">${AL[alI]?.l||'✈'}</div></div>`;
-  if(icao||reg) fetchPhoto(icao||reg, num);
+
+  if (icao||reg) {
+    // Stratégie 1: ICAO hex ou immatriculation directe
+    fetchPhoto(icao||reg, num);
+  } else if (num && num.length >= 4) {
+    // Stratégie 2: chercher par numéro de vol sur Planespotters
+    fetchPhotoByFlight(num, alI, acType);
+  } else if (alI && AL[alI]) {
+    // Stratégie 3: photo générique de la compagnie
+    fetchPhotoByAirline(alI);
+  }
 
   // Ouvrir le panneau
   document.getElementById('sidePanel').classList.add('show');
