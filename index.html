@@ -120,7 +120,7 @@ body{font-family:'Nunito',sans-serif;color:var(--txt);background:var(--bg)}
 .sp-info-v{font-family:'DM Mono',monospace;font-size:11px;color:var(--txt);text-align:right}
 
 /* AIRPORT PANEL avec swipe */
-.apt-panel{position:fixed;left:0;right:0;bottom:0;z-index:500;background:#fff;border-radius:20px 20px 0 0;border-top:1px solid var(--b2);transform:translateY(100%);transition:transform .42s cubic-bezier(.4,0,.2,1);height:80dvh;display:flex;flex-direction:column;box-shadow:0 -4px 24px rgba(0,0,0,.1);touch-action:none}
+.apt-panel{position:fixed;left:0;right:0;bottom:0;z-index:500;background:#fff;border-radius:20px 20px 0 0;border-top:1px solid var(--b2);transform:translateY(100%);transition:transform .42s cubic-bezier(.4,0,.2,1);height:80dvh;display:flex;flex-direction:column;box-shadow:0 -4px 24px rgba(0,0,0,.1)}
 .apt-panel.show{transform:translateY(0)}
 .apt-handle{padding:10px 0 0;display:flex;justify-content:center;flex-shrink:0;cursor:grab;user-select:none}
 .apt-hbar{width:36px;height:4px;border-radius:2px;background:var(--b)}
@@ -692,24 +692,25 @@ function closeSidePanel(){
 
 /* ── SWIPE TO CLOSE ── */
 function initSwipe(){
-  // Swipe bas pour fermer le panneau aéroport
+  // Swipe bas pour fermer — UNIQUEMENT depuis le handle
   const panel=document.getElementById('aptPanel');
   const handle=document.getElementById('aptHandle');
   let startY=0,startT=0,isDragging=false;
   handle.addEventListener('touchstart',e=>{
     startY=e.touches[0].clientY;startT=Date.now();isDragging=true;
+    e.stopPropagation();
   },{passive:true});
-  document.addEventListener('touchmove',e=>{
+  handle.addEventListener('touchmove',e=>{
     if(!isDragging)return;
     const dy=e.touches[0].clientY-startY;
     if(dy>0)panel.style.transform=`translateY(${dy}px)`;
   },{passive:true});
-  document.addEventListener('touchend',e=>{
+  handle.addEventListener('touchend',e=>{
     if(!isDragging)return;isDragging=false;
     const dy=e.changedTouches[0].clientY-startY;
     const dt=Date.now()-startT;
     panel.style.transform='';
-    if(dy>80||dy/dt>0.5){haptic(10);closeAptPanel();}
+    if(dy>60||dy/dt>0.4){haptic(10);closeAptPanel();}
   });
 
   // Swipe gauche pour fermer le side panel
@@ -920,7 +921,7 @@ function renderTable(items,isDep){
     const st=fl.status||'Unknown';const delay=fl.departure?.delay||fl.arrival?.delay||0;
     const schT=pt(sch),actT=pt(act);const hasAct=actT&&actT!==schT;
     const stK=st==='Cancelled'?'can':st==='Delayed'?'del':st==='Arrived'||st==='Departed'?'arr':st==='EnRoute'?'dep':'ok';
-    return `<div class="ft-row" onclick="openFlightFromTable(${_i})" style="cursor:pointer;-webkit-tap-highlight-color:rgba(26,115,232,.1)">
+    return `<div class="ft-row" data-idx="${_i}" style="cursor:pointer">
       <div class="ft-airline">${alE[alI]||'✈'}</div>
       <div class="ft-num">${num}</div>
       <div class="ft-dest"><div class="ft-dest-iata">${dest}</div><div class="ft-dest-name">${dn}</div></div>
@@ -938,7 +939,7 @@ function showGnd(){
   const g=flights.filter(f=>f[8]);
   document.getElementById('aptTable').innerHTML=g.length?g.map((f,gi)=>{
     const c=(f[0]||'').trim();const ac=getAlCode(c);const ad=ac?AL[ac]:null;
-    return `<div class="ft-row" onclick="openFlightFromRadar('${c}')" style="cursor:pointer">
+    return `<div class="ft-row" data-call="${c}" style="cursor:pointer">
       <div class="ft-airline">${ad?.l||'✈'}</div>
       <div class="ft-num">${c}</div>
       <div class="ft-dest"><div class="ft-dest-iata">${f[20]||'—'}</div><div class="ft-dest-name">Au sol · ${(f[1]||'').toUpperCase()}</div></div>
@@ -984,6 +985,42 @@ window.addEventListener('load',()=>{
   loadAptPanel();
   document.getElementById('aptPanel').classList.add('show');
   rint=setInterval(loadFlights,12000);
+
+  // Délégation — touchstart/touchend pour mobile, click pour desktop
+  function handleTableTap(row) {
+    if (!row) return;
+    row.style.background = '#EEF4FF';
+    setTimeout(() => row.style.background = '', 150);
+    if (row.dataset.idx !== undefined && row.dataset.idx !== '') {
+      openFlightFromTable(parseInt(row.dataset.idx));
+    } else if (row.dataset.call) {
+      openFlightFromRadar(row.dataset.call);
+    }
+  }
+
+  // Touch: track start position, fire on touchend only if no scroll
+  let _tStartY = 0, _tStartX = 0, _tRow = null;
+  document.getElementById('aptPanel').addEventListener('touchstart', e => {
+    _tRow = e.target.closest('.ft-row');
+    _tStartY = e.touches[0].clientY;
+    _tStartX = e.touches[0].clientX;
+  }, {passive: true});
+
+  document.getElementById('aptPanel').addEventListener('touchend', e => {
+    if (!_tRow) return;
+    const dy = Math.abs(e.changedTouches[0].clientY - _tStartY);
+    const dx = Math.abs(e.changedTouches[0].clientX - _tStartX);
+    // Only fire if it was a tap (not a scroll)
+    if (dy < 10 && dx < 10) {
+      handleTableTap(_tRow);
+    }
+    _tRow = null;
+  }, {passive: true});
+
+  // Click pour desktop
+  document.getElementById('aptPanel').addEventListener('click', e => {
+    handleTableTap(e.target.closest('.ft-row'));
+  });
 });
 </script>
 </body>
