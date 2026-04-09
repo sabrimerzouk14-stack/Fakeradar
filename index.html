@@ -833,6 +833,46 @@ async function fetchPhotoByFlightNum(flightNum, alCode) {
   }
 }
 
+
+/* ── PHOTO AVION IMMÉDIATE ── */
+function showPlanePhoto(alCode, rawType) {
+  const el = document.getElementById('spPhoto');
+  if (!el) return;
+  const alData = alCode ? AL[alCode] : null;
+  const badge = alData ? `<div class="sp-photo-airline">${alData.l} ${alData.n}</div>` : '';
+
+  // Choisir une photo selon le type si connu
+  const t = (rawType||'').toUpperCase();
+  let url = '';
+
+  if      (t.includes('380')) url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Air_France_Airbus_A380_F-HPJB.jpg/800px-Air_France_Airbus_A380_F-HPJB.jpg';
+  else if (t.includes('350')) url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Air_France_Airbus_A350-900_F-HTYA.jpg/800px-Air_France_Airbus_A350-900_F-HTYA.jpg';
+  else if (t.includes('787')) url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Air_France_Boeing_787-9_F-HRBA.jpg/800px-Air_France_Boeing_787-9_F-HRBA.jpg';
+  else if (t.includes('777')) url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Air_France_Boeing_777-300ER_F-GZNC.jpg/800px-Air_France_Boeing_777-300ER_F-GZNC.jpg';
+  else if (t.includes('330')) url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Air_France_A330-200_F-GZCA.jpg/800px-Air_France_A330-200_F-GZCA.jpg';
+  else if (t.includes('321')) url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Airbus_A321-211%2C_Air_France_JP7617782.jpg/800px-Airbus_A321-211%2C_Air_France_JP7617782.jpg';
+  else if (t.includes('320')) url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Airbus_A320-214%2C_Air_France_JP7252826.jpg/800px-Airbus_A320-214%2C_Air_France_JP7252826.jpg';
+  else if (t.includes('319')) url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/EasyJet_Airbus_A319.jpg/800px-EasyJet_Airbus_A319.jpg';
+  else if (t.includes('737') || t.includes('738')) url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Ryanair_Boeing_737-800_EI-DCL.jpg/800px-Ryanair_Boeing_737-800_EI-DCL.jpg';
+  else if (t.includes('ATR') || t.includes('AT7')) url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Air_Corsica_ATR_72-600_F-HTUN.jpg/800px-Air_Corsica_ATR_72-600_F-HTUN.jpg';
+  else if (t.includes('190') || t.includes('195')) url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Embraer_ERJ-190_British_Airways.jpg/800px-Embraer_ERJ-190_British_Airways.jpg';
+  else {
+    // Pas de type — photo générique selon compagnie
+    const AL_PHOTOS = {
+      AF:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Airbus_A320-214%2C_Air_France_JP7252826.jpg/800px-Airbus_A320-214%2C_Air_France_JP7252826.jpg',
+      FR:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Ryanair_Boeing_737-800_EI-DCL.jpg/800px-Ryanair_Boeing_737-800_EI-DCL.jpg',
+      EZY:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/EasyJet_Airbus_A319.jpg/800px-EasyJet_Airbus_A319.jpg',
+      U2:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/EasyJet_Airbus_A319.jpg/800px-EasyJet_Airbus_A319.jpg',
+      TO:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Airbus_A321-211%2C_Air_France_JP7617782.jpg/800px-Airbus_A321-211%2C_Air_France_JP7617782.jpg',
+      XK:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Air_Corsica_ATR_72-600_F-HTUN.jpg/800px-Air_Corsica_ATR_72-600_F-HTUN.jpg',
+    };
+    url = AL_PHOTOS[alCode] || 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Airbus_A320-214%2C_Air_France_JP7252826.jpg/800px-Airbus_A320-214%2C_Air_France_JP7252826.jpg';
+  }
+
+  const fb = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Airbus_A320-214%2C_Air_France_JP7252826.jpg/800px-Airbus_A320-214%2C_Air_France_JP7252826.jpg';
+  el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.src='${fb}'">${badge}<div class="sp-photo-credit">📷 Wikimedia Commons</div>`;
+}
+
 /* ── PHOTO AVION PAR TYPE — images Wikipedia génériques ── */
 const PLANE_PHOTOS = {
   'A220': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Air_France_Airbus_A220-300_F-HZUM.jpg/800px-Air_France_Airbus_A220-300_F-HZUM.jpg',
@@ -1156,18 +1196,9 @@ function openFlightFromTable(idx){
   const reg=fl.aircraft?.reg||'';
   const icao=fl.aircraft?.icao24||'';
   // acType géré dans le bloc photo ci-dessous
-  document.getElementById('spPhoto').innerHTML=`<div class="sp-photo-fb"><div class="sp-photo-fb-ico">${AL[alI]?.l||'✈'}</div></div>`;
-
-  // Extraire le type depuis les données AeroDataBox
-  const typeRaw = fl.aircraft?.model || fl.aircraft?.icao || fl.aircraft?.type || '';
-  
-  if (typeRaw) {
-    // Type connu directement
-    fetchPhotoByTypeAndAirline(typeRaw, alI);
-  } else {
-    // Type inconnu → chercher via AeroDataBox par numéro de vol
-    fetchPhotoByFlightNum(num, alI);
-  }
+  // Photo immédiate — pas besoin d'attendre l'API
+  // On prend une photo Wikipedia selon la compagnie ou un avion générique
+  showPlanePhoto(alI, fl.aircraft?.model || fl.aircraft?.icao || '');
 
   // Ouvrir le panneau
   document.getElementById('sidePanel').classList.add('show');
