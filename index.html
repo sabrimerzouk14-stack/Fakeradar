@@ -107,7 +107,7 @@ body{font-family:'Nunito',sans-serif;color:var(--txt);background:var(--bg)}
 .sp-prog-fill{height:100%;background:linear-gradient(90deg,var(--blue2),var(--blue));border-radius:1px;transition:width .5s}
 .sp-prog-plane{position:absolute;top:50%;transform:translate(-50%,-50%);font-size:14px;transition:left .5s}
 .sp-prog-info{display:flex;justify-content:space-between;width:100%;font-size:8px;color:var(--txt3);font-family:'DM Mono',monospace}
-.sp-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none}
+.sp-scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
 .sp-scroll::-webkit-scrollbar{display:none}
 .sp-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--b);border-bottom:1px solid var(--b)}
 .sp-cell{background:var(--card2);padding:11px 8px;text-align:center}
@@ -146,13 +146,15 @@ body{font-family:'Nunito',sans-serif;color:var(--txt);background:var(--bg)}
 .apt-tab-ico{font-size:15px;line-height:1}
 .apt-tab-lbl{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .apt-tab.on{color:var(--blue);border-bottom-color:var(--blue)}
-.apt-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none;touch-action:pan-y;}
+.apt-body{flex:1;overflow-y:scroll;overscroll-behavior:contain;scrollbar-width:none;}
 .apt-body::-webkit-scrollbar{display:none}
 
 /* TABLE */
 .ft-head{display:flex;align-items:center;padding:7px 14px;background:var(--bg);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:2}
 .ft-hc{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)}
-.ft-row{display:flex;align-items:center;padding:14px 14px;border-bottom:1px solid var(--b);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:rgba(26,115,232,.15);user-select:none;}
+.ft-row{display:flex;align-items:center;padding:14px 14px;border-bottom:1px solid var(--b);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:rgba(26,115,232,.15);user-select:none;text-decoration:none;color:inherit;}
+.ft-row:hover{background:#F8FAFD}
+.ft-row:active{background:#EEF4FF}
 .ft-row:hover{background:#F8FAFD}.ft-row:active{background:#EEF4FF}
 .ft-row:active{background:#EEF4FF}
 .ft-airline{width:32px;flex-shrink:0;font-size:16px;text-align:center}
@@ -924,7 +926,7 @@ function renderTable(items,isDep){
     const st=fl.status||'Unknown';const delay=fl.departure?.delay||fl.arrival?.delay||0;
     const schT=pt(sch),actT=pt(act);const hasAct=actT&&actT!==schT;
     const stK=st==='Cancelled'?'can':st==='Delayed'?'del':st==='Arrived'||st==='Departed'?'arr':st==='EnRoute'?'dep':'ok';
-    return `<div class="ft-row" data-idx="${_i}">
+    return `<a class="ft-row" href="javascript:void(0)" data-idx="${_i}">
       <div class="ft-airline">${alE[alI]||'✈'}</div>
       <div class="ft-num">${num}</div>
       <div class="ft-dest"><div class="ft-dest-iata">${dest}</div><div class="ft-dest-name">${dn}</div></div>
@@ -934,7 +936,7 @@ function renderTable(items,isDep){
         ${delay>0&&stK==='del'?`<div class="ft-time-del">+${delay}mn</div>`:''}
       </div>
       <div class="ft-st"><span class="st st-${stK}">${stM[st]||st}</span></div>
-    </div>`;
+    </a>`;
   }).join('');
   document.getElementById('aptTable').innerHTML=_rows||'<div class="ld"><div class="ld-txt">AUCUN VOL</div></div>';
   // Attacher les événements APRÈS injection HTML — seule méthode fiable iOS
@@ -947,13 +949,13 @@ function showGnd(){
   const g=flights.filter(f=>f[8]);
   document.getElementById('aptTable').innerHTML=g.length?g.map(f=>{
     const gc=(f[0]||'').trim();const ac=getAlCode(gc);const ad=ac?AL[ac]:null;
-    return `<div class="ft-row" data-idx="${_i}">
+    return `<a class="ft-row" href="javascript:void(0)" data-idx="${_i}">
       <div class="ft-airline">${ad?.l||'✈'}</div>
       <div class="ft-num">${gc}</div>
       <div class="ft-dest"><div class="ft-dest-iata">${f[20]||'—'}</div><div class="ft-dest-name">Au sol</div></div>
       <div class="ft-time"><div class="ft-time-sch">${(f[1]||'').toUpperCase()}</div></div>
       <div class="ft-st"><span class="st st-brd">AU SOL</span></div>
-    </div>`;
+    </a>`;
   }).join(''):'<div class="ld"><div class="ld-txt">AUCUN VOL AU SOL</div></div>';
   // Attacher les événements après injection
   const gRows=document.getElementById('aptTable').querySelectorAll('.ft-row');
