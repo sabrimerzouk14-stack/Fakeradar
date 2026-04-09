@@ -833,90 +833,76 @@ async function fetchPhotoByFlightNum(flightNum, alCode) {
   }
 }
 
-/* ── PHOTO PAR TYPE + COMPAGNIE ── */
-const _typePhotoCache = {};
+/* ── PHOTO AVION PAR TYPE — images Wikipedia génériques ── */
+const PLANE_PHOTOS = {
+  'A220': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Air_France_Airbus_A220-300_F-HZUM.jpg/800px-Air_France_Airbus_A220-300_F-HZUM.jpg',
+  'A318': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Air_France_A318_F-GUGJ.jpg/800px-Air_France_A318_F-GUGJ.jpg',
+  'A319': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/EasyJet_Airbus_A319.jpg/800px-EasyJet_Airbus_A319.jpg',
+  'A320': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Airbus_A320-214%2C_Air_France_JP7252826.jpg/800px-Airbus_A320-214%2C_Air_France_JP7252826.jpg',
+  'A321': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Airbus_A321-211%2C_Air_France_JP7617782.jpg/800px-Airbus_A321-211%2C_Air_France_JP7617782.jpg',
+  'A330': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Air_France_A330-200_F-GZCA.jpg/800px-Air_France_A330-200_F-GZCA.jpg',
+  'A340': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Air_France_A340-300_F-GLZO.jpg/800px-Air_France_A340-300_F-GLZO.jpg',
+  'A350': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Air_France_Airbus_A350-900_F-HTYA.jpg/800px-Air_France_Airbus_A350-900_F-HTYA.jpg',
+  'A380': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Air_France_Airbus_A380_F-HPJB.jpg/800px-Air_France_Airbus_A380_F-HPJB.jpg',
+  'B737': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Ryanair_Boeing_737-800_EI-DCL.jpg/800px-Ryanair_Boeing_737-800_EI-DCL.jpg',
+  'B738': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Ryanair_Boeing_737-800_EI-DCL.jpg/800px-Ryanair_Boeing_737-800_EI-DCL.jpg',
+  'B77W': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Air_France_Boeing_777-300ER_F-GZNC.jpg/800px-Air_France_Boeing_777-300ER_F-GZNC.jpg',
+  'B789': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Air_France_Boeing_787-9_F-HRBA.jpg/800px-Air_France_Boeing_787-9_F-HRBA.jpg',
+  'B788': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Air_France_Boeing_787-9_F-HRBA.jpg/800px-Air_France_Boeing_787-9_F-HRBA.jpg',
+  'B38M': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Ryanair_Boeing_737_MAX_8_EI-HGA.jpg/800px-Ryanair_Boeing_737_MAX_8_EI-HGA.jpg',
+  'AT76': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Air_Corsica_ATR_72-600_F-HTUN.jpg/800px-Air_Corsica_ATR_72-600_F-HTUN.jpg',
+  'AT45': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/ATR_42-500_Air_Corsica.jpg/800px-ATR_42-500_Air_Corsica.jpg',
+  'E190': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Embraer_ERJ-190_British_Airways.jpg/800px-Embraer_ERJ-190_British_Airways.jpg',
+  'E195': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Embraer_ERJ-195_Azul.jpg/800px-Embraer_ERJ-195_Azul.jpg',
+  'CRJ7': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/CRJ-700_Brit_Air.jpg/800px-CRJ-700_Brit_Air.jpg',
+  'DEFAULT': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Airbus_A320-214%2C_Air_France_JP7252826.jpg/800px-Airbus_A320-214%2C_Air_France_JP7252826.jpg',
+};
 
-async function fetchPhotoByTypeAndAirline(rawType, alCode) {
+function fetchPhotoByTypeAndAirline(rawType, alCode) {
   const el = document.getElementById('spPhoto');
   const alData = alCode ? AL[alCode] : null;
   const badge = alData ? `<div class="sp-photo-airline">${alData.l} ${alData.n}</div>` : '';
 
-  // Extraire le code ICAO du type depuis le texte brut
-  // AeroDataBox retourne des types comme "Airbus A320", "Boeing 737-800", "A320neo"
   const t = (rawType||'').toUpperCase()
     .replace('AIRBUS','').replace('BOEING','').replace('EMBRAER','').trim();
 
-  // Correspondance vers code ICAO standard Planespotters
-  let icaoType = null;
-  if      (t.includes('A220') || t.includes('CS3') || t.includes('BCS')) icaoType='A220';
-  else if (t.includes('A318')) icaoType='A318';
-  else if (t.includes('A319')) icaoType='A319';
-  else if (t.includes('A320')) icaoType='A320';
-  else if (t.includes('A321')) icaoType='A321';
-  else if (t.includes('A330')) icaoType='A332';
-  else if (t.includes('A340')) icaoType='A343';
-  else if (t.includes('A350')) icaoType='A359';
-  else if (t.includes('A380')) icaoType='A388';
-  else if (t.includes('737 MAX') || t.includes('MAX8')) icaoType='B38M';
-  else if (t.includes('737') && t.includes('800')) icaoType='B738';
-  else if (t.includes('737') && t.includes('900')) icaoType='B739';
-  else if (t.includes('737')) icaoType='B738';
-  else if (t.includes('747')) icaoType='B744';
-  else if (t.includes('757')) icaoType='B757';
-  else if (t.includes('767')) icaoType='B763';
-  else if (t.includes('777')) icaoType='B77W';
-  else if (t.includes('787') && t.includes('10')) icaoType='B78X';
-  else if (t.includes('787') && t.includes('9')) icaoType='B789';
-  else if (t.includes('787')) icaoType='B788';
-  else if (t.includes('E195')) icaoType='E195';
-  else if (t.includes('E190')) icaoType='E190';
-  else if (t.includes('E175')) icaoType='E175';
-  else if (t.includes('ATR 72') || t.includes('ATR72') || t.includes('AT76')) icaoType='AT76';
-  else if (t.includes('ATR 42') || t.includes('ATR42') || t.includes('AT45')) icaoType='AT45';
-  else if (t.includes('CRJ')) icaoType='CRJ7';
+  let key = null;
+  if      (t.includes('A220') || t.includes('BCS')) key='A220';
+  else if (t.includes('A318'))  key='A318';
+  else if (t.includes('A319'))  key='A319';
+  else if (t.includes('A320'))  key='A320';
+  else if (t.includes('A321'))  key='A321';
+  else if (t.includes('A330'))  key='A330';
+  else if (t.includes('A340'))  key='A340';
+  else if (t.includes('A350'))  key='A350';
+  else if (t.includes('A380'))  key='A380';
+  else if (t.includes('MAX'))   key='B38M';
+  else if (t.includes('737'))   key='B738';
+  else if (t.includes('777'))   key='B77W';
+  else if (t.includes('787'))   key='B789';
+  else if (t.includes('ATR 7') || t.includes('ATR7') || t.includes('AT76') || t.includes('72')) key='AT76';
+  else if (t.includes('ATR 4') || t.includes('ATR4') || t.includes('AT45') || t.includes('42')) key='AT45';
+  else if (t.includes('E190') || t.includes('190')) key='E190';
+  else if (t.includes('E195') || t.includes('195')) key='E195';
+  else if (t.includes('CRJ'))   key='CRJ7';
 
-  // Cache pour éviter de refaire la requête
-  const cacheKey = icaoType + ':' + alCode;
-  if (_typePhotoCache[cacheKey]) {
-    const {url, credit} = _typePhotoCache[cacheKey];
-    el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block"
-      onerror="this.parentElement.innerHTML='<div class=sp-photo-fb><div class=sp-photo-fb-ico>✈</div></div>'">${badge}
-      <div class="sp-photo-credit">📷 ${credit}</div>`;
-    return;
-  }
+  const url = (key && PLANE_PHOTOS[key]) || PLANE_PHOTOS.DEFAULT;
+  const fb  = PLANE_PHOTOS.DEFAULT;
+  el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block"
+    onerror="this.src='${fb}'">${badge}
+    <div class="sp-photo-credit">📷 ${key||'Avion'} · Wikimedia Commons</div>`;
+}
 
-  if (!icaoType) {
-    el.innerHTML = `<div class="sp-photo-fb"><div class="sp-photo-fb-ico">${alData?.l||'✈'}</div></div>${badge}`;
-    return;
-  }
-
-  try {
-    // Planespotters API par type ICAO
-    const r = await fetch(
-      `https://api.planespotters.net/pub/photos/type/${icaoType}`,
-      {signal: AbortSignal.timeout(6000)}
-    );
-    if (r.ok) {
-      const d = await r.json();
-      const photos = d.photos || [];
-      if (photos.length > 0) {
-        // Préférer la compagnie si possible
-        const sameAl = photos.filter(p => p.airline?.iata === alCode);
-        const pool = sameAl.length > 0 ? sameAl : photos;
-        const pick = pool[Math.floor(Math.random() * Math.min(pool.length, 8))];
-        const url = pick.thumbnail_large?.src || pick.thumbnail?.src;
-        if (url) {
-          const credit = `${pick.aircraft?.reg||icaoType} · © ${pick.photographer||''}`;
-          _typePhotoCache[cacheKey] = {url, credit};
-          el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block"
-            onerror="this.parentElement.innerHTML='<div class=sp-photo-fb><div class=sp-photo-fb-ico>✈</div></div>'">${badge}
-            <div class="sp-photo-credit">📷 ${credit}</div>`;
-          return;
-        }
-      }
-    }
-  } catch(e) {}
-  el.innerHTML = `<div class="sp-photo-fb"><div class="sp-photo-fb-ico">${alData?.l||'✈'}</div></div>${badge}`;
+function fetchPhotoByFlightNum(flightNum, alCode) {
+  // Sans type connu, afficher logo compagnie
+  const el = document.getElementById('spPhoto');
+  const alData = alCode ? AL[alCode] : null;
+  const badge = alData ? `<div class="sp-photo-airline">${alData.l} ${alData.n}</div>` : '';
+  // Essayer quand même avec A320 générique si compagnie connue
+  const url = PLANE_PHOTOS.DEFAULT;
+  el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block"
+    onerror="this.src='${url}'">${badge}
+    <div class="sp-photo-credit">📷 Wikimedia Commons</div>`;
 }
 
 
