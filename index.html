@@ -719,7 +719,16 @@ function openFlight(call,fdata){
   document.getElementById('map').classList.add('shifted');
   document.getElementById('aptPanel').classList.remove('show');
   renderMap();
-  fetchPhoto(f[1]||f[0],call);
+  // Pour les avions en vol: ICAO hex disponible → photo précise
+  // On essaie d'abord par ICAO, sinon par type+compagnie
+  const _hex=(f[1]||'').trim().toLowerCase();
+  if(_hex&&_hex.length>=4){
+    fetchPhoto(_hex,call);
+  } else {
+    const _type=f[20]||''; // type depuis ADS-B
+    const _alCode=getAlCode(call);
+    fetchPhotoByTypeAndAirline(_type,_alCode||'');
+  }
   fetchRoute(call);
 }
 
@@ -773,6 +782,55 @@ function initSwipe(){
   });
 }
 
+
+
+/* ── PHOTO PAR TYPE + COMPAGNIE (principal pour vols programmés) ── */
+async function fetchPhotoByTypeAndAirline(acType, alCode) {
+  const el = document.getElementById('spPhoto');
+  const alData = alCode ? AL[alCode] : null;
+  const badge = alData ? `<div class="sp-photo-airline">${alData.l} ${alData.n}</div>` : '';
+  
+  // Nettoyer le type d'avion pour la recherche
+  let typeClean = acType
+    .replace(/airbus/i, 'A')
+    .replace(/boeing/i, 'B')
+    .replace(/embraer/i, 'E')
+    .replace(/ATR/i, 'ATR')
+    .trim()
+    .split(/[\s-]/)[0]  // prendre juste le premier mot ex: "A320"
+    .toUpperCase();
+  if (!typeClean) typeClean = 'A320';
+
+  try {
+    // Chercher des photos de ce type d'avion
+    const r = await fetch(
+      `https://api.planespotters.net/pub/photos/type/${encodeURIComponent(typeClean)}`,
+      {signal: AbortSignal.timeout(6000)}
+    );
+    if (r.ok) {
+      const d = await r.json();
+      const photos = d.photos || [];
+      if (photos.length > 0) {
+        // Priorité 1: même compagnie
+        const sameAirline = photos.filter(p => p.airline?.iata === alCode);
+        // Priorité 2: n'importe quelle photo du bon type
+        const pool = sameAirline.length > 0 ? sameAirline : photos;
+        // Photo aléatoire parmi les 10 premières
+        const pick = pool[Math.floor(Math.random() * Math.min(pool.length, 10))];
+        const img = pick.thumbnail_large?.src || pick.thumbnail?.src;
+        if (img) {
+          el.innerHTML = `<img src="${img}" alt="${acType}" style="width:100%;height:100%;object-fit:cover;display:block"
+            onerror="this.parentElement.innerHTML='<div class=sp-photo-fb><div class=sp-photo-fb-ico>✈</div></div>'">${badge}
+            <div class="sp-photo-credit">© ${pick.photographer||''} · ${pick.aircraft?.reg||typeClean}</div>`;
+          return;
+        }
+      }
+    }
+  } catch(e) {}
+  
+  // Fallback: logo compagnie
+  el.innerHTML = `<div class="sp-photo-fb"><div class="sp-photo-fb-ico">${alData?.l||'✈'}</div></div>${badge}`;
+}
 
 /* ── PHOTO PAR NUMÉRO DE VOL ── */
 async function fetchPhotoByFlight(flightNum, alCode, acType) {
@@ -1023,19 +1081,18 @@ function openFlightFromTable(idx){
   // Photo avion — plusieurs stratégies selon les données dispo
   const reg=fl.aircraft?.reg||'';
   const icao=fl.aircraft?.icao24||'';
-  const acType=fl.aircraft?.model||fl.aircraft?.reg||'';
+  // acType géré dans le bloc photo ci-dessous
   document.getElementById('spPhoto').innerHTML=`<div class="sp-photo-fb"><div class="sp-photo-fb-ico">${AL[alI]?.l||'✈'}</div></div>`;
 
-  if (icao||reg) {
-    // Stratégie 1: ICAO hex ou immatriculation directe
-    fetchPhoto(icao||reg, num);
-  } else if (num && num.length >= 4) {
-    // Stratégie 2: chercher par numéro de vol sur Planespotters
-    fetchPhotoByFlight(num, alI, acType);
-  } else if (alI && AL[alI]) {
-    // Stratégie 3: photo générique de la compagnie
-    fetchPhotoByAirline(alI);
-  }
+  // Extraire le type depuis tous les champs possibles d'AeroDataBox
+  const typeRaw = fl.aircraft?.model        // ex: "Airbus A320"
+               || fl.aircraft?.icao         // ex: "A320"  
+               || fl.aircraft?.type         // ex: "A320neo"
+               || fl.aircraft?.reg          // immatriculation si rien d'autre
+               || '';
+  
+  // Toujours chercher une photo — même sans type on a la compagnie
+  fetchPhotoByTypeAndAirline(typeRaw, alI);
 
   // Ouvrir le panneau
   document.getElementById('sidePanel').classList.add('show');
