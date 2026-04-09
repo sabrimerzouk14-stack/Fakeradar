@@ -359,17 +359,43 @@ const AL={
   AY:{n:'Finnair',l:'🇫🇮',c:'#003580'},
 };
 
-const APT_PHOTOS={
-  CDG:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Paris_Charles_de_Gaulle_Airport_from_the_Air.jpg/800px-Paris_Charles_de_Gaulle_Airport_from_the_Air.jpg',
-  ORY:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Aeroport_Paris-Orly_vue_de_dessus.jpg/800px-Aeroport_Paris-Orly_vue_de_dessus.jpg',
-  MRS:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=240&fit=crop',
-  NCE:'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&h=240&fit=crop',
-  LYS:'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600&h=240&fit=crop',
-  TLS:'https://images.unsplash.com/photo-1541532713592-79a0317b6b77?w=600&h=240&fit=crop',
-  BOD:'https://images.unsplash.com/photo-1556388158-158ea5ccacbd?w=600&h=240&fit=crop',
-  NTE:'https://images.unsplash.com/photo-1518623489648-a173ef7824f3?w=600&h=240&fit=crop',
-  DEFAULT:'https://images.unsplash.com/photo-1587019158091-1a103c5dd17f?w=600&h=240&fit=crop',
+// Termes de recherche Wikimedia par aéroport — chargés dynamiquement
+const APT_WIKI_SEARCH={
+  CDG:'Paris-Charles de Gaulle Airport runway aerial',
+  ORY:'Paris Orly Airport aerial runway',
+  MRS:'Marseille Provence Airport runway aerial',
+  NCE:'Nice Côte Azur Airport aerial runway',
+  LYS:'Lyon Saint-Exupéry Airport aerial',
+  TLS:'Toulouse Blagnac Airport aerial runway',
+  BOD:'Bordeaux Mérignac Airport aerial',
+  NTE:'Nantes Atlantique Airport aerial runway',
+  MLH:'EuroAirport Basel Mulhouse aerial',
+  LIL:'Lille Lesquin Airport aerial runway',
+  SXB:'Strasbourg Airport aerial runway',
+  MPL:'Montpellier Airport aerial runway',
+  RNS:'Rennes Airport aerial runway',
+  BES:'Brest Airport aerial runway',
+  AJA:'Ajaccio Airport aerial Corsica',
+  BIA:'Bastia Airport aerial Corsica',
+  CLY:'Calvi Airport aerial Corsica runway',
+  FSC:'Figari Airport aerial Corsica',
+  BIQ:'Biarritz Airport aerial runway',
+  LDE:'Tarbes Lourdes Airport aerial',
+  PUF:'Pau Airport aerial runway',
+  GNB:'Grenoble Airport aerial runway',
+  CMF:'Chambery Airport aerial runway',
+  NCY:'Annecy Airport aerial runway',
+  LRH:'La Rochelle Airport aerial runway',
+  LIG:'Limoges Airport aerial runway',
+  CFR:'Caen Airport aerial runway',
+  DIJ:'Dijon Airport aerial runway',
+  FNI:'Nimes Airport aerial runway',
+  CCF:'Carcassonne Airport aerial runway',
+  PGF:'Perpignan Airport aerial runway',
 };
+
+// Cache des photos déjà chargées
+const _photoCache={};
 
 /* ── STATE ── */
 let curIata='MRS', map=null, markers={}, aptMkrs={}, flights=[];
@@ -777,14 +803,100 @@ async function fetchPhoto(icao,call){
   el.innerHTML=`<div class="sp-photo-fb"><div class="sp-photo-fb-ico">${alData?.l||'✈'}</div></div>${badge}`;
 }
 
+
+/* ── PHOTO AÉROPORT via Wikimedia Commons API ── */
+async function loadAptPhoto(iata, ap) {
+  // Utiliser le cache si dispo
+  if (_photoCache[iata]) {
+    setAptPhoto(_photoCache[iata], ap.n);
+    return;
+  }
+  const query = APT_WIKI_SEARCH[iata] || (ap.n + ' airport aerial runway');
+  try {
+    // Wikimedia Commons search API
+    const url = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(ap.n + ' Airport')}&prop=pageimages&format=json&pithumbsize=800&origin=*`;
+    const r = await fetch(url, {signal: AbortSignal.timeout(6000)});
+    if (r.ok) {
+      const d = await r.json();
+      const pages = Object.values(d.query?.pages || {});
+      const img = pages[0]?.thumbnail?.source;
+      if (img) {
+        _photoCache[iata] = img;
+        setAptPhoto(img, ap.n);
+        return;
+      }
+    }
+  } catch(e) {}
+  
+  // Fallback: Wikimedia Commons search
+  try {
+    const url2 = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srnamespace=6&srlimit=5&format=json&origin=*`;
+    const r2 = await fetch(url2, {signal: AbortSignal.timeout(6000)});
+    if (r2.ok) {
+      const d2 = await r2.json();
+      const results = d2.query?.search || [];
+      for (const res of results) {
+        const title = res.title.replace('File:', '');
+        // Construire l'URL thumbnail Wikimedia
+        const encoded = encodeURIComponent(title).replace(/%20/g,'_').replace(/%2C/g,',');
+        const md5 = await getMD5(title);
+        const imgUrl = `https://upload.wikimedia.org/wikipedia/commons/thumb/${md5[0]}/${md5.substring(0,2)}/${encoded}/800px-${encoded}`;
+        _photoCache[iata] = imgUrl;
+        setAptPhoto(imgUrl, ap.n);
+        return;
+      }
+    }
+  } catch(e) {}
+
+  // Fallback final: Unsplash piste générique
+  const fallbacks = {
+    CDG:'https://images.unsplash.com/photo-1606768737752-5f660b64c804?w=700&h=280&fit=crop',
+    ORY:'https://images.unsplash.com/photo-1569154941061-e231b4725ef1?w=700&h=280&fit=crop',
+    MRS:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=700&h=280&fit=crop',
+    NCE:'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=700&h=280&fit=crop',
+    LYS:'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=700&h=280&fit=crop',
+    TLS:'https://images.unsplash.com/photo-1541532713592-79a0317b6b77?w=700&h=280&fit=crop',
+    BOD:'https://images.unsplash.com/photo-1556388158-158ea5ccacbd?w=700&h=280&fit=crop',
+    NTE:'https://images.unsplash.com/photo-1518623489648-a173ef7824f3?w=700&h=280&fit=crop',
+    AJA:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=700&h=280&fit=crop',
+    BIA:'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=700&h=280&fit=crop',
+    NCE:'https://images.unsplash.com/photo-1499678329028-101435549a4e?w=700&h=280&fit=crop',
+    BIQ:'https://images.unsplash.com/photo-1520942702018-0862200e6873?w=700&h=280&fit=crop',
+    GNB:'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=700&h=280&fit=crop',
+    CMF:'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=700&h=280&fit=crop',
+  };
+  const fb = fallbacks[iata] || 'https://images.unsplash.com/photo-1587019158091-1a103c5dd17f?w=700&h=280&fit=crop';
+  _photoCache[iata] = fb;
+  setAptPhoto(fb, ap.n);
+}
+
+function setAptPhoto(url, name) {
+  const el = document.getElementById('aptPhoto');
+  if (!el) return;
+  const fb = 'https://images.unsplash.com/photo-1587019158091-1a103c5dd17f?w=700&h=280&fit=crop';
+  el.innerHTML = `<img src="${url}" alt="${name}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.src='${fb}'"><div class="apt-photo-credit">📷 ${name}</div>`;
+}
+
+// MD5 simplifié pour Wikimedia URL (utilise l'API à la place)
+async function getMD5(filename) {
+  // Wikimedia utilise MD5 du nom de fichier pour l'arborescence
+  // On utilise l'API imageinfo à la place
+  try {
+    const r = await fetch(`https://commons.wikimedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(filename)}&prop=imageinfo&iiprop=url&format=json&origin=*`);
+    const d = await r.json();
+    const pages = Object.values(d.query?.pages || {});
+    return pages[0]?.imageinfo?.[0]?.url || '';
+  } catch(e) { return ''; }
+}
+
 /* ── AIRPORT PANEL ── */
 async function loadAptPanel(){
   const ap=FR[curIata];if(!ap)return;
   document.getElementById('aptTitle').textContent=ap.n;
   document.getElementById('aptMeta').textContent=`🇫🇷 ${curIata} / ${ap.icao} · ${ap.c}`;
-  const ph=APT_PHOTOS[curIata]||APT_PHOTOS.DEFAULT;
-  const fp=APT_PHOTOS.DEFAULT;
-  document.getElementById('aptPhoto').innerHTML=`<img src="${ph}" alt="${ap.n}" onerror="this.src='${fp}'"><div class="apt-photo-credit">📷 ${ap.n}</div>`;
+  // Charger photo depuis Wikimedia Commons dynamiquement
+  document.getElementById('aptPhoto').innerHTML=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#EEF4FF"><div style="font-size:28px;opacity:.4">🛫</div></div>`;
+  loadAptPhoto(curIata, ap);
   try{
     const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${ap.lat}&longitude=${ap.lng}&current=temperature_2m,wind_speed_10m,wind_direction_10m,weathercode,visibility&wind_speed_unit=kn`,{signal:AbortSignal.timeout(5000)});
     if(r.ok){
