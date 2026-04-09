@@ -784,53 +784,92 @@ function initSwipe(){
 
 
 
-/* ── PHOTO PAR TYPE + COMPAGNIE (principal pour vols programmés) ── */
-async function fetchPhotoByTypeAndAirline(acType, alCode) {
+/* ── PHOTO PAR TYPE + COMPAGNIE ── */
+const _typePhotoCache = {};
+
+async function fetchPhotoByTypeAndAirline(rawType, alCode) {
   const el = document.getElementById('spPhoto');
   const alData = alCode ? AL[alCode] : null;
   const badge = alData ? `<div class="sp-photo-airline">${alData.l} ${alData.n}</div>` : '';
-  
-  // Nettoyer le type d'avion pour la recherche
-  let typeClean = acType
-    .replace(/airbus/i, 'A')
-    .replace(/boeing/i, 'B')
-    .replace(/embraer/i, 'E')
-    .replace(/ATR/i, 'ATR')
-    .trim()
-    .split(/[\s-]/)[0]  // prendre juste le premier mot ex: "A320"
-    .toUpperCase();
-  if (!typeClean) typeClean = 'A320';
+
+  // Extraire le code ICAO du type depuis le texte brut
+  // AeroDataBox retourne des types comme "Airbus A320", "Boeing 737-800", "A320neo"
+  const t = (rawType||'').toUpperCase()
+    .replace('AIRBUS','').replace('BOEING','').replace('EMBRAER','').trim();
+
+  // Correspondance vers code ICAO standard Planespotters
+  let icaoType = null;
+  if      (t.includes('A220') || t.includes('CS3') || t.includes('BCS')) icaoType='A220';
+  else if (t.includes('A318')) icaoType='A318';
+  else if (t.includes('A319')) icaoType='A319';
+  else if (t.includes('A320')) icaoType='A320';
+  else if (t.includes('A321')) icaoType='A321';
+  else if (t.includes('A330')) icaoType='A332';
+  else if (t.includes('A340')) icaoType='A343';
+  else if (t.includes('A350')) icaoType='A359';
+  else if (t.includes('A380')) icaoType='A388';
+  else if (t.includes('737 MAX') || t.includes('MAX8')) icaoType='B38M';
+  else if (t.includes('737') && t.includes('800')) icaoType='B738';
+  else if (t.includes('737') && t.includes('900')) icaoType='B739';
+  else if (t.includes('737')) icaoType='B738';
+  else if (t.includes('747')) icaoType='B744';
+  else if (t.includes('757')) icaoType='B757';
+  else if (t.includes('767')) icaoType='B763';
+  else if (t.includes('777')) icaoType='B77W';
+  else if (t.includes('787') && t.includes('10')) icaoType='B78X';
+  else if (t.includes('787') && t.includes('9')) icaoType='B789';
+  else if (t.includes('787')) icaoType='B788';
+  else if (t.includes('E195')) icaoType='E195';
+  else if (t.includes('E190')) icaoType='E190';
+  else if (t.includes('E175')) icaoType='E175';
+  else if (t.includes('ATR 72') || t.includes('ATR72') || t.includes('AT76')) icaoType='AT76';
+  else if (t.includes('ATR 42') || t.includes('ATR42') || t.includes('AT45')) icaoType='AT45';
+  else if (t.includes('CRJ')) icaoType='CRJ7';
+
+  // Cache pour éviter de refaire la requête
+  const cacheKey = icaoType + ':' + alCode;
+  if (_typePhotoCache[cacheKey]) {
+    const {url, credit} = _typePhotoCache[cacheKey];
+    el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block"
+      onerror="this.parentElement.innerHTML='<div class=sp-photo-fb><div class=sp-photo-fb-ico>✈</div></div>'">${badge}
+      <div class="sp-photo-credit">📷 ${credit}</div>`;
+    return;
+  }
+
+  if (!icaoType) {
+    el.innerHTML = `<div class="sp-photo-fb"><div class="sp-photo-fb-ico">${alData?.l||'✈'}</div></div>${badge}`;
+    return;
+  }
 
   try {
-    // Chercher des photos de ce type d'avion
+    // Planespotters API par type ICAO
     const r = await fetch(
-      `https://api.planespotters.net/pub/photos/type/${encodeURIComponent(typeClean)}`,
+      `https://api.planespotters.net/pub/photos/type/${icaoType}`,
       {signal: AbortSignal.timeout(6000)}
     );
     if (r.ok) {
       const d = await r.json();
       const photos = d.photos || [];
       if (photos.length > 0) {
-        // Priorité 1: même compagnie
-        const sameAirline = photos.filter(p => p.airline?.iata === alCode);
-        // Priorité 2: n'importe quelle photo du bon type
-        const pool = sameAirline.length > 0 ? sameAirline : photos;
-        // Photo aléatoire parmi les 10 premières
-        const pick = pool[Math.floor(Math.random() * Math.min(pool.length, 10))];
-        const img = pick.thumbnail_large?.src || pick.thumbnail?.src;
-        if (img) {
-          el.innerHTML = `<img src="${img}" alt="${acType}" style="width:100%;height:100%;object-fit:cover;display:block"
+        // Préférer la compagnie si possible
+        const sameAl = photos.filter(p => p.airline?.iata === alCode);
+        const pool = sameAl.length > 0 ? sameAl : photos;
+        const pick = pool[Math.floor(Math.random() * Math.min(pool.length, 8))];
+        const url = pick.thumbnail_large?.src || pick.thumbnail?.src;
+        if (url) {
+          const credit = `${pick.aircraft?.reg||icaoType} · © ${pick.photographer||''}`;
+          _typePhotoCache[cacheKey] = {url, credit};
+          el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block"
             onerror="this.parentElement.innerHTML='<div class=sp-photo-fb><div class=sp-photo-fb-ico>✈</div></div>'">${badge}
-            <div class="sp-photo-credit">© ${pick.photographer||''} · ${pick.aircraft?.reg||typeClean}</div>`;
+            <div class="sp-photo-credit">📷 ${credit}</div>`;
           return;
         }
       }
     }
   } catch(e) {}
-  
-  // Fallback: logo compagnie
   el.innerHTML = `<div class="sp-photo-fb"><div class="sp-photo-fb-ico">${alData?.l||'✈'}</div></div>${badge}`;
 }
+
 
 /* ── PHOTO PAR NUMÉRO DE VOL ── */
 async function fetchPhotoByFlight(flightNum, alCode, acType) {
