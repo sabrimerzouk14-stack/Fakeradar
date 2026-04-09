@@ -11,7 +11,38 @@
 <link rel="manifest" href="/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js">
+/* ── GLOBAL TAP HANDLER — fonctionne sur tous les mobiles ── */
+(function(){
+  var t0x=0, t0y=0;
+  document.addEventListener('touchstart', function(e){
+    t0x = e.touches[0].clientX;
+    t0y = e.touches[0].clientY;
+  }, true);
+  
+  document.addEventListener('touchend', function(e){
+    var dx = Math.abs(e.changedTouches[0].clientX - t0x);
+    var dy = Math.abs(e.changedTouches[0].clientY - t0y);
+    if(dx > 15 || dy > 15) return; // scroll, pas un tap
+    
+    var el = e.target;
+    // Remonter jusqu'à ft-row
+    for(var i=0; i<8; i++){
+      if(!el) break;
+      if(el.classList && el.classList.contains('ft-row')){
+        e.preventDefault();
+        var idx = el.getAttribute('data-idx');
+        var call = el.getAttribute('data-call');
+        if(idx !== null) openFlightFromTable(parseInt(idx));
+        else if(call) openFlightFromRadar(call);
+        return;
+      }
+      el = el.parentElement;
+    }
+  }, true); // capture phase = avant tout autre handler
+})();
+
+</script>
 <style>
 :root{
   --bg:#F4F6F9;--card:#FFF;--card2:#F8F9FB;
@@ -911,7 +942,7 @@ function renderTable(items,isDep){
   const alE={'AF':'🇫🇷','KL':'🇳🇱','LH':'🇩🇪','BA':'🇬🇧','FR':'💛','EZY':'🟠','VLG':'🟡','IBE':'🇪🇸','TK':'🇹🇷','TP':'🇵🇹','AZ':'🇮🇹','XK':'🏝️','TO':'🟢','W6':'🟣','SK':'🇸🇪','LX':'🇨🇭','OS':'🇦🇹','U2':'🟠','SN':'🇧🇪','AY':'🇫🇮'};
   const stM={Departed:'DÉCOLLÉ',Arrived:'ATTERRI',Delayed:'RETARDÉ',Cancelled:'ANNULÉ',Scheduled:'PRÉVU',EnRoute:'EN VOL',Diverted:'DÉROUTÉ',Unknown:'—'};
   const pt=t=>{if(!t)return'';const m=String(t).match(/(\d{2}):(\d{2})/);return m?m[1]+':'+m[2]:'—';};
-  document.getElementById('aptTable').innerHTML=items.map((fl,_i)=>{
+  const _rows=items.map((fl,_i)=>{
     const alI=fl.airline?.iata||'';
     const num=fl.number||`${alI}${fl.flightNumber||''}`;
     const dest=isDep?(fl.arrival?.airport?.iata||'—'):(fl.departure?.airport?.iata||'—');
@@ -921,7 +952,7 @@ function renderTable(items,isDep){
     const st=fl.status||'Unknown';const delay=fl.departure?.delay||fl.arrival?.delay||0;
     const schT=pt(sch),actT=pt(act);const hasAct=actT&&actT!==schT;
     const stK=st==='Cancelled'?'can':st==='Delayed'?'del':st==='Arrived'||st==='Departed'?'arr':st==='EnRoute'?'dep':'ok';
-    return `<button class="ft-row" onclick="openFlightFromTable(${_i})">
+    return `<div class="ft-row" data-idx="${_i}">
       <div class="ft-airline">${alE[alI]||'✈'}</div>
       <div class="ft-num">${num}</div>
       <div class="ft-dest"><div class="ft-dest-iata">${dest}</div><div class="ft-dest-name">${dn}</div></div>
@@ -931,30 +962,39 @@ function renderTable(items,isDep){
         ${delay>0&&stK==='del'?`<div class="ft-time-del">+${delay}mn</div>`:''}
       </div>
       <div class="ft-st"><span class="st st-${stK}">${stM[st]||st}</span></div>
-    </button>`;
-  }).join('')||'<div class="ld"><div class="ld-txt">AUCUN VOL</div></div>';
+    </div>`;
+  }).join('');
+  document.getElementById('aptTable').innerHTML=_rows||'<div class="ld"><div class="ld-txt">AUCUN VOL</div></div>';
+  // Attacher les événements APRÈS injection HTML — seule méthode fiable iOS
+  document.getElementById('aptTable').querySelectorAll('.ft-row').forEach((el,i)=>{
+    el.addEventListener('click',()=>openFlightFromTable(i));
+    el.addEventListener('touchend',e=>{
+      e.preventDefault();
+      openFlightFromTable(i);
+    },{passive:false});
+  });
 }
 
 function showGnd(){
   const g=flights.filter(f=>f[8]);
-  document.getElementById('aptTable').innerHTML=g.length?g.map((f,gi)=>{
-    const c=(f[0]||'').trim();const ac=getAlCode(c);const ad=ac?AL[ac]:null;
-    return `<button class="ft-row" onclick="openFlightFromRadar('${c}')">
+  document.getElementById('aptTable').innerHTML=g.length?g.map(f=>{
+    const gc=(f[0]||'').trim();const ac=getAlCode(gc);const ad=ac?AL[ac]:null;
+    return `<div class="ft-row" data-idx="${_i}">
       <div class="ft-airline">${ad?.l||'✈'}</div>
-      <div class="ft-num">${c}</div>
-      <div class="ft-dest"><div class="ft-dest-iata">${f[20]||'—'}</div><div class="ft-dest-name">Au sol · ${(f[1]||'').toUpperCase()}</div></div>
-      <div class="ft-time"><div class="ft-time-sch">—</div></div>
+      <div class="ft-num">${gc}</div>
+      <div class="ft-dest"><div class="ft-dest-iata">${f[20]||'—'}</div><div class="ft-dest-name">Au sol</div></div>
+      <div class="ft-time"><div class="ft-time-sch">${(f[1]||'').toUpperCase()}</div></div>
       <div class="ft-st"><span class="st st-brd">AU SOL</span></div>
     </div>`;
   }).join(''):'<div class="ld"><div class="ld-txt">AUCUN VOL AU SOL</div></div>';
-}
-
-// Ouvrir un avion au sol depuis la liste (utilise les données radar)
-function openFlightFromRadar(call){
-  const f=flights.find(x=>(x[0]||'').trim()===call);
-  if(!f)return;
-  haptic(12);
-  openFlight(call,f);
+  // Attacher les événements après injection
+  const gRows=document.getElementById('aptTable').querySelectorAll('.ft-row');
+  gRows.forEach((el,i)=>{
+    if(!g[i])return;
+    const call=(g[i][0]||'').trim();
+    el.addEventListener('click',()=>openFlightFromRadar(call));
+    el.addEventListener('touchend',e=>{e.preventDefault();openFlightFromRadar(call);},{passive:false});
+  });
 }
 
 function switchAptTab(t){
@@ -1002,6 +1042,37 @@ window.addEventListener('load',()=>{
   let _tStartY = 0, _tStartX = 0, _tRow = null;
   // Boutons natifs — pas besoin de JS pour les touches
 });
+
+/* ── GLOBAL TAP HANDLER — fonctionne sur tous les mobiles ── */
+(function(){
+  var t0x=0, t0y=0;
+  document.addEventListener('touchstart', function(e){
+    t0x = e.touches[0].clientX;
+    t0y = e.touches[0].clientY;
+  }, true);
+  
+  document.addEventListener('touchend', function(e){
+    var dx = Math.abs(e.changedTouches[0].clientX - t0x);
+    var dy = Math.abs(e.changedTouches[0].clientY - t0y);
+    if(dx > 15 || dy > 15) return; // scroll, pas un tap
+    
+    var el = e.target;
+    // Remonter jusqu'à ft-row
+    for(var i=0; i<8; i++){
+      if(!el) break;
+      if(el.classList && el.classList.contains('ft-row')){
+        e.preventDefault();
+        var idx = el.getAttribute('data-idx');
+        var call = el.getAttribute('data-call');
+        if(idx !== null) openFlightFromTable(parseInt(idx));
+        else if(call) openFlightFromRadar(call);
+        return;
+      }
+      el = el.parentElement;
+    }
+  }, true); // capture phase = avant tout autre handler
+})();
+
 </script>
 </body>
 </html>
