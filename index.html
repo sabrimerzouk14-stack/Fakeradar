@@ -186,7 +186,6 @@ body{font-family:'Nunito',sans-serif;color:var(--txt);background:var(--bg)}
 </head>
 <body>
 <div id="map"></div>
-<div class="plane-tooltip" id="planeTip"></div>
 
 <div class="topbar">
   <div class="tb-logo">
@@ -502,16 +501,8 @@ function animPlane(call,fLat,fLng,toLat,toLng){
 }
 
 /* ── TOOLTIP avion ── */
-const tip=document.getElementById('planeTip');
-function showTip(call,x,y){
-  // Desktop uniquement — détecter si touch device
-  if('ontouchstart' in window) return;
-  tip.textContent=call;
-  tip.style.left=(x+12)+'px';
-  tip.style.top=(y-28)+'px';
-  tip.style.display='block';
-}
-function hideTip(){tip.style.display='none';}
+
+function hideTip(){}
 
 /* ── RENDER MAP ── */
 function renderMap(){
@@ -533,8 +524,6 @@ function renderMap(){
     }else{
       const m=L.marker([lat,lng],{icon:planeIcon(call,hdg,sel,gnd),zIndexOffset:sel?1000:0}).addTo(map);
       m.on('click',()=>{ haptic(); openFlight(call,f); });
-      m.on('mouseover',e=>showTip(call,e.originalEvent.clientX,e.originalEvent.clientY));
-      m.on('mouseout',hideTip);
       m.on('touchstart',()=>haptic(5));
       markers[call]=m;
       if(sel)animPlane(call,lat,lng,lat,lng);
@@ -717,7 +706,6 @@ function openFlight(call,fdata){
   document.getElementById('spPos').textContent=f[6]?`${parseFloat(f[6]).toFixed(4)}° / ${parseFloat(f[5]).toFixed(4)}°`:'—';
   document.getElementById('spGate').textContent='—';
   ['spDepSch','spDepAct','spArrSch','spArrEst'].forEach(id=>document.getElementById(id).textContent='—');
-  hideTip();
   document.getElementById('sidePanel').classList.add('show');
   document.getElementById('map').classList.add('shifted');
   document.getElementById('aptPanel').classList.remove('show');
