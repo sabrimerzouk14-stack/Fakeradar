@@ -503,13 +503,17 @@ function animPlane(call,fLat,fLng,toLat,toLng){
 
 /* ── TOOLTIP avion ── */
 const tip=document.getElementById('planeTip');
+let _tipTimer=null;
 function showTip(call,x,y){
   tip.textContent=call;
   tip.style.left=(x+12)+'px';
   tip.style.top=(y-28)+'px';
   tip.style.display='block';
+  // Cacher automatiquement après 1.5s sur mobile
+  clearTimeout(_tipTimer);
+  _tipTimer=setTimeout(hideTip,1500);
 }
-function hideTip(){tip.style.display='none';}
+function hideTip(){tip.style.display='none';clearTimeout(_tipTimer);}
 
 /* ── RENDER MAP ── */
 function renderMap(){
@@ -715,6 +719,7 @@ function openFlight(call,fdata){
   document.getElementById('spPos').textContent=f[6]?`${parseFloat(f[6]).toFixed(4)}° / ${parseFloat(f[5]).toFixed(4)}°`:'—';
   document.getElementById('spGate').textContent='—';
   ['spDepSch','spDepAct','spArrSch','spArrEst'].forEach(id=>document.getElementById(id).textContent='—');
+  hideTip();
   document.getElementById('sidePanel').classList.add('show');
   document.getElementById('map').classList.add('shifted');
   document.getElementById('aptPanel').classList.remove('show');
@@ -1282,6 +1287,10 @@ function onRadiusChange(v){
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }
+
+/* ── CACHE TOOLTIP AU TOUCH ── */
+document.getElementById('map').addEventListener('touchstart', hideTip, {passive:true});
+document.addEventListener('touchstart', hideTip, {passive:true});
 
 /* ── INIT ── */
 window.addEventListener('load',()=>{
