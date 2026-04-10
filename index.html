@@ -503,17 +503,15 @@ function animPlane(call,fLat,fLng,toLat,toLng){
 
 /* ── TOOLTIP avion ── */
 const tip=document.getElementById('planeTip');
-let _tipTimer=null;
 function showTip(call,x,y){
+  // Desktop uniquement — détecter si touch device
+  if('ontouchstart' in window) return;
   tip.textContent=call;
   tip.style.left=(x+12)+'px';
   tip.style.top=(y-28)+'px';
   tip.style.display='block';
-  // Cacher automatiquement après 1.5s sur mobile
-  clearTimeout(_tipTimer);
-  _tipTimer=setTimeout(hideTip,1500);
 }
-function hideTip(){tip.style.display='none';clearTimeout(_tipTimer);}
+function hideTip(){tip.style.display='none';}
 
 /* ── RENDER MAP ── */
 function renderMap(){
@@ -1287,10 +1285,6 @@ function onRadiusChange(v){
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }
-
-/* ── CACHE TOOLTIP AU TOUCH ── */
-document.getElementById('map').addEventListener('touchstart', hideTip, {passive:true});
-document.addEventListener('touchstart', hideTip, {passive:true});
 
 /* ── INIT ── */
 window.addEventListener('load',()=>{
