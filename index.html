@@ -726,7 +726,7 @@ function openFlight(call,fdata){
     const _alCode=getAlCode(call);
     fetchPhotoByTypeAndAirline(_type,_alCode||'');
   }
-  fetchRoute(call);
+  // fetchRoute supprimé - économise les quotas AeroDataBox
 }
 
 function closeSidePanel(){
@@ -784,51 +784,10 @@ function initSwipe(){
 
 
 /* ── PHOTO PAR NUMÉRO DE VOL (quand le type n'est pas dans les données) ── */
-const _flightTypeCache = {};
 
-async async function fetchPhotoByFlightNum(flightNum, alCode) {
-  const el = document.getElementById('spPhoto');
-  const alData = alCode ? AL[alCode] : null;
-  const badge = alData ? `<div class="sp-photo-airline">${alData.l} ${alData.n}</div>` : '';
-
-  // Cache
-  if (_flightTypeCache[flightNum]) {
-    fetchPhotoByTypeAndAirline(_flightTypeCache[flightNum], alCode);
-    return;
-  }
-
-  try {
-    // AeroDataBox: chercher le type via le numéro de vol
-    const clean = flightNum.replace(/\s/g, '');
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
-    const url = `https://aerodatabox.p.rapidapi.com/flights/number/${encodeURIComponent(clean)}/${dateStr}`;
-    const r = await fetch(url, {
-      headers: {
-        'x-rapidapi-host': 'aerodatabox.p.rapidapi.com',
-        'x-rapidapi-key': '6ba60a59eamshceaf2a48185646cp13a77bjsnf3305db0de2c'
-      },
-      signal: AbortSignal.timeout(6000)
-    });
-    if (r.ok) {
-      const d = await r.json();
-      // Peut retourner un array ou un objet
-      const flight = Array.isArray(d) ? d[0] : d;
-      const type = flight?.aircraft?.model || flight?.aircraft?.icao || '';
-      if (type) {
-        _flightTypeCache[flightNum] = type;
-        fetchPhotoByTypeAndAirline(type, alCode);
-        return;
-      }
-    }
-  } catch(e) {}
-
-  // Fallback: photo par compagnie si pas de type trouvé
-  if (alCode) {
-    fetchPhotoByAirline(alCode);
-  } else {
-    el.innerHTML = `<div class="sp-photo-fb"><div class="sp-photo-fb-ico">${alData?.l||'✈'}</div></div>${badge}`;
-  }
+async function fetchPhotoByFlightNum(flightNum, alCode) {
+  // Plus d'appel AeroDataBox ici — on affiche directement une photo générique
+  fetchPhotoByTypeAndAirline('', alCode);
 }
 
 
