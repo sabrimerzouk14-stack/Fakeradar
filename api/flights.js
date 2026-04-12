@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-const RAPIDAPI_KEY = '6ba60a59eamshceaf2a48185646cp13a77bjsnf3305db0de2c';
+const RAPIDAPI_KEY = '10afcc18cdmsh82284cafd9b38d5p182f29jsn3dda2a9823c2';
 
 export default async function handler(req) {
   const url  = new URL(req.url);
