@@ -32,7 +32,7 @@ body{font-family:'Nunito',sans-serif;color:var(--txt);background:var(--bg)}
 
 .leaflet-control-zoom{border:none!important;border-radius:8px!important;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.12)!important;margin-right:12px!important;margin-bottom:20px!important}
 .leaflet-control-zoom a{background:#fff!important;color:var(--blue)!important;font-size:16px!important;line-height:30px!important;width:30px!important;height:30px!important;border:none!important;border-bottom:1px solid var(--b)!important}
-.leaflet-popup-content-wrapper,.leaflet-popup-tip,.leaflet-control-attribution{display:none!important}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip,.leaflet-control-attribution,.leaflet-tooltip{display:none!important}
 
 /* TOPBAR */
 .topbar{position:fixed;top:0;left:0;right:0;z-index:600;height:52px;background:rgba(255,255,255,.97);backdrop-filter:blur(14px);border-bottom:1px solid var(--b2);display:flex;align-items:center;gap:10px;padding:0 12px;box-shadow:0 1px 10px rgba(0,0,0,.07)}
@@ -526,7 +526,7 @@ function renderMap(){
       if(sel)markers[call].setZIndexOffset(1000);
       animPlane(call,cur.lat,cur.lng,lat,lng);
     }else{
-      const m=L.marker([lat,lng],{icon:planeIcon(call,hdg,sel,gnd),zIndexOffset:sel?1000:0}).addTo(map);
+      const m=L.marker([lat,lng],{icon:planeIcon(call,hdg,sel,gnd),zIndexOffset:sel?1000:0,title:''}).addTo(map);
       m.on('click',()=>{ haptic(); openFlight(call,f); });
       m.on('touchstart',()=>haptic(5));
       markers[call]=m;
@@ -675,6 +675,7 @@ function openFlight(call,fdata){
   const f=fdata||flights.find(x=>(x[0]||'').trim()===call);
   if(!f)return;
   selCall=call;
+  if(map)map.closePopup();
   haptic(12);
   if(map&&f[6]&&f[5])map.flyTo([f[6],f[5]],Math.max(map.getZoom(),9),{duration:.8});
   drawTrail(f[1]||f[0],f[6],f[5]);
@@ -785,7 +786,7 @@ function initSwipe(){
 /* ── PHOTO PAR NUMÉRO DE VOL (quand le type n'est pas dans les données) ── */
 const _flightTypeCache = {};
 
-async function fetchPhotoByFlightNum(flightNum, alCode) {
+async async function fetchPhotoByFlightNum(flightNum, alCode) {
   const el = document.getElementById('spPhoto');
   const alData = alCode ? AL[alCode] : null;
   const badge = alData ? `<div class="sp-photo-airline">${alData.l} ${alData.n}</div>` : '';
@@ -930,7 +931,7 @@ function fetchPhotoByTypeAndAirline(rawType, alCode) {
     <div class="sp-photo-credit">📷 ${key||'Avion'} · Wikimedia Commons</div>`;
 }
 
-function fetchPhotoByFlightNum(flightNum, alCode) {
+async function fetchPhotoByFlightNum(flightNum, alCode) {
   // Sans type connu, afficher logo compagnie
   const el = document.getElementById('spPhoto');
   const alData = alCode ? AL[alCode] : null;
