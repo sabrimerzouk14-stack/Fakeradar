@@ -726,7 +726,7 @@ function openFlight(call,fdata){
     const _alCode=getAlCode(call);
     fetchPhotoByTypeAndAirline(_type,_alCode||'');
   }
-  // fetchRoute supprimé - économise les quotas AeroDataBox
+  fetchRoute(call); // via adsb.lol - gratuit
 }
 
 function closeSidePanel(){
@@ -1144,8 +1144,9 @@ async function loadAptTable(){
     renderTable(items,isDep);
     return;
   }catch(e){
-    if(e.message==='429'){
-      // Quota épuisé → données simulées réalistes
+    if(e.message==='429'||e.message.includes('429')){
+      // Quota épuisé → données simulées + message
+      document.getElementById('aptTable').innerHTML='';
       renderSimulated(isDep);
       return;
     }
