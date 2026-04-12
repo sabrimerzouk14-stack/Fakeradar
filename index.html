@@ -292,7 +292,7 @@ body{font-family:'Nunito',sans-serif;color:var(--txt);background:var(--bg)}
 </div>
 
 <script>
-const RAPIDAPI_KEY='6ba60a59eamshceaf2a48185646cp13a77bjsnf3305db0de2c';
+const RAPIDAPI_KEY='10afcc18cdmsh82284cafd9b38d5p182f29jsn3dda2a9823c2';
 
 /* ── AIRPORTS ── */
 const FR={
@@ -1029,6 +1029,74 @@ function setAptPhoto(url, name) {
 }
 
 
+
+/* ── DONNÉES SIMULÉES (quand API indisponible) ── */
+function renderSimulated(isDep) {
+  const ROUTES = {
+    CDG:['LHR','JFK','AMS','FRA','MAD','BCN','FCO','DXB','NRT','SIN','MRS','LYS','NCE','TLS','BOD'],
+    ORY:['MRS','LYS','NCE','TLS','BOD','NTE','LIL','SXB','MPL','AJA','BIA','CLY','FSC','AGP','PMI'],
+    MRS:['CDG','ORY','LYS','NCE','TLS','LHR','MAD','BCN','AMS','FRA','TUN','ALG','CMN','ORN','PMI'],
+    NCE:['CDG','ORY','LHR','MAD','BCN','AMS','GVA','ZRH','FCO','ATH','LIS','MRS','LYS','TLS'],
+    LYS:['CDG','ORY','MRS','NCE','LHR','MAD','BCN','AMS','FRA','FCO','TLS','BOD','NTE'],
+    TLS:['CDG','ORY','LHR','MAD','BCN','AMS','FCO','MRS','LYS','NCE','BOD','NTE'],
+    BOD:['CDG','ORY','LHR','MAD','BCN','AMS','MRS','LYS','NCE','TLS','NTE','PMI'],
+    NTE:['CDG','ORY','LHR','MAD','BCN','AMS','MRS','LYS','NCE','TLS','BOD'],
+    DEFAULT:['CDG','LHR','AMS','MAD','BCN','FCO','LIS','ATH','PMI','AGP'],
+  };
+  const AIRLINES=[
+    {iata:'AF',name:'Air France',l:'🇫🇷'},
+    {iata:'EZY',name:'easyJet',l:'🟠'},
+    {iata:'FR',name:'Ryanair',l:'💛'},
+    {iata:'TO',name:'Transavia',l:'🟢'},
+    {iata:'VLG',name:'Vueling',l:'🟡'},
+    {iata:'KL',name:'KLM',l:'🇳🇱'},
+    {iata:'LH',name:'Lufthansa',l:'🇩🇪'},
+    {iata:'BA',name:'British Airways',l:'🇬🇧'},
+    {iata:'IB',name:'Iberia',l:'🇪🇸'},
+    {iata:'TP',name:'TAP',l:'🇵🇹'},
+  ];
+  const STATUSES=['ok','ok','ok','ok','brd','del','dep','arr'];
+  const STATUS_LBL={ok:'PRÉVU',brd:'EMBARQUEMENT',del:'RETARDÉ',dep:'DÉCOLLÉ',arr:'ATTERRI'};
+  const routes=(ROUTES[curIata]||ROUTES.DEFAULT);
+  const now=new Date();
+
+  const rows=Array.from({length:14},(_,i)=>{
+    const al=AIRLINES[i%AIRLINES.length];
+    const num=Math.floor(100+Math.random()*9900);
+    const dest=routes[i%routes.length];
+    const dt=new Date(now.getTime()+(isDep?1:-1)*(i*22+Math.floor(Math.random()*15))*60000);
+    const hh=dt.getHours().toString().padStart(2,'0');
+    const mm=dt.getMinutes().toString().padStart(2,'0');
+    const st=STATUSES[Math.floor(Math.random()*STATUSES.length)];
+    const delay=st==='del'?Math.floor(15+Math.random()*45):0;
+    return {
+      number:`${al.iata}${num}`,
+      airline:{iata:al.iata,name:al.name},
+      status:st==='ok'?'Scheduled':st==='brd'?'Boarding':st==='del'?'Delayed':st==='dep'?'Departed':'Arrived',
+      departure:{
+        airport:{iata:isDep?curIata:dest,name:isDep?FR[curIata]?.n||curIata:dest},
+        scheduledTime:{local:`${hh}:${mm}`},
+        delay:delay,
+      },
+      arrival:{
+        airport:{iata:isDep?dest:curIata,name:isDep?dest:FR[curIata]?.n||curIata},
+        scheduledTime:{local:`${hh}:${mm}`},
+      },
+    };
+  });
+
+  // Trier par heure
+  rows.sort((a,b)=>{
+    const ta=isDep?a.departure.scheduledTime.local:a.arrival.scheduledTime.local;
+    const tb=isDep?b.departure.scheduledTime.local:b.arrival.scheduledTime.local;
+    return ta.localeCompare(tb);
+  });
+
+  document.getElementById('aptTable').innerHTML=
+    '<div style="text-align:center;padding:6px;font-size:10px;color:var(--amb);font-family:DM Mono,monospace">⚠️ DONNÉES SIMULÉES — API indisponible</div>';
+  renderTable(rows, isDep);
+}
+
 /* ── AIRPORT PANEL ── */
 async function loadAptPanel(){
   const ap=FR[curIata];if(!ap)return;
@@ -1060,110 +1128,31 @@ async function loadAptTable(){
   if(aptTab==='gnd'){showGnd();return;}
   document.getElementById('aptTable').innerHTML='<div class="ld"><div class="ld-ring"></div><div class="ld-txt">CHARGEMENT HORAIRES...</div></div>';
   const isDep=aptTab==='dep';
+
+  // Essayer AeroDataBox
   try{
     const now=new Date();
     const from=now.toISOString().substring(0,16);
     const to=new Date(now.getTime()+12*3600000).toISOString().substring(0,16);
     const url=`https://aerodatabox.p.rapidapi.com/flights/airports/iata/${curIata}/${from}/${to}?withLeg=true&direction=${isDep?'Departure':'Arrival'}&withCancelled=true&withCodeshared=false&withCargo=false&withPrivate=false`;
-    const r=await fetch(url,{headers:{'x-rapidapi-host':'aerodatabox.p.rapidapi.com','x-rapidapi-key':RAPIDAPI_KEY},signal:AbortSignal.timeout(10000)});
-    if(!r.ok)throw new Error('API '+r.status);
+    const r=await fetch(url,{headers:{'x-rapidapi-host':'aerodatabox.p.rapidapi.com','x-rapidapi-key':RAPIDAPI_KEY},signal:AbortSignal.timeout(8000)});
+    if(r.status===429) throw new Error('429');
+    if(!r.ok) throw new Error('API '+r.status);
     const d=await r.json();
     const items=isDep?(d.departures||[]):(d.arrivals||[]);
-    if(!items.length)throw new Error('empty');
+    if(!items.length) throw new Error('empty');
     renderTable(items,isDep);
+    return;
   }catch(e){
+    if(e.message==='429'){
+      // Quota épuisé → données simulées réalistes
+      renderSimulated(isDep);
+      return;
+    }
     document.getElementById('aptTable').innerHTML=`<div class="ld-err">Données indisponibles<br><small>${e.message}</small></div>`;
   }
 }
 
-
-/* ── OPEN FLIGHT FROM TABLE (départs/arrivées) ── */
-function openFlightFromTable(idx){
-  haptic(12);
-  const fl=_tableItems[idx];
-  if(!fl)return;
-
-  const alI=fl.airline?.iata||'';
-  const num=fl.number||`${alI}${fl.flightNumber||''}`;
-  const dep=fl.departure?.airport?.iata||'—';
-  const arr=fl.arrival?.airport?.iata||'—';
-  const depName=fl.departure?.airport?.name||'Départ';
-  const arrName=fl.arrival?.airport?.name||'Arrivée';
-  const status=fl.status||'Unknown';
-  const gnd=status==='Scheduled'||status==='Unknown';
-  const type=fl.aircraft?.model||fl.aircraft?.reg||'—';
-
-  // Heures
-  const pt=t=>{if(!t)return'—';const m=String(t).match(/(\d{2}):(\d{2})/);return m?m[1]+':'+m[2]:'—';};
-  const depSch=pt(fl.departure?.scheduledTime?.local);
-  const depAct=pt(fl.departure?.actualTime?.local||fl.departure?.revisedTime?.local);
-  const arrSch=pt(fl.arrival?.scheduledTime?.local);
-  const arrEst=pt(fl.arrival?.estimatedTime?.local||fl.arrival?.revisedTime?.local);
-
-  // Progression estimée
-  let pct=0;
-  if(status==='EnRoute'||status==='Departed'){pct=Math.floor(20+Math.random()*60);}
-  else if(status==='Arrived'||status==='Landed'){pct=100;}
-
-  // Remplir le panneau
-  document.getElementById('spCall').textContent=num;
-  document.getElementById('spBadge').textContent=
-    status==='Arrived'||status==='Landed'?'ATTERRI':
-    status==='EnRoute'||status==='Departed'?'EN VOL':
-    status==='Cancelled'?'ANNULÉ':
-    gnd?'PRÉVU':'EN VOL';
-  document.getElementById('spBadge').className='sp-badge '+(
-    status==='Cancelled'?'sol':
-    status==='Arrived'||status==='Landed'?'vol':
-    gnd?'sol':'vol'
-  );
-  document.getElementById('spType').textContent=type;
-  document.getElementById('spAirline').textContent=fl.airline?.name||(alI?AL[alI]?.n||alI:'—');
-  document.getElementById('spFrom').textContent=dep;
-  document.getElementById('spTo').textContent=arr;
-  document.getElementById('spFromName').textContent=depName;
-  document.getElementById('spToName').textContent=arrName;
-  document.getElementById('spDepSch').textContent=depSch;
-  document.getElementById('spDepAct').textContent=depAct!=='—'&&depAct!==depSch?depAct:'—';
-  document.getElementById('spArrSch').textContent=arrSch;
-  document.getElementById('spArrEst').textContent=arrEst!=='—'&&arrEst!==arrSch?arrEst:'—';
-  document.getElementById('spFill').style.width=pct+'%';
-  document.getElementById('spPlane').style.left=pct+'%';
-
-  // Infos vol — distance/durée si dispo
-  const dur=fl.duration;
-  document.getElementById('spD1').textContent=dep+' → '+arr;
-  document.getElementById('spD2').textContent=dur?Math.floor(dur/60)+'h'+String(dur%60).padStart(2,'0'):'—';
-
-  // Données manquantes pour un vol pas encore en vol
-  document.getElementById('spAlt').textContent=status==='EnRoute'?'—':status==='Arrived'?'0 ft':'—';
-  document.getElementById('spSpd').textContent='—';
-  document.getElementById('spHdg').textContent='—';
-  document.getElementById('spVrate').textContent='—';
-  document.getElementById('spMach').textContent='—';
-  document.getElementById('spSqk').textContent=fl.aircraft?.reg||'—';
-  document.getElementById('spIcao').textContent=fl.aircraft?.icao24||fl.aircraft?.reg||'—';
-  document.getElementById('spPos').textContent=status==='EnRoute'?'En route':'Non disponible';
-  document.getElementById('spGate').textContent=[
-    fl.departure?.terminal?'Terminal '+fl.departure.terminal:'',
-    fl.departure?.gate?'Porte '+fl.departure.gate:''
-  ].filter(Boolean).join(' · ')||'—';
-
-  // Photo avion — plusieurs stratégies selon les données dispo
-  const reg=fl.aircraft?.reg||'';
-  const icao=fl.aircraft?.icao24||'';
-  // acType géré dans le bloc photo ci-dessous
-  // Photo immédiate — pas besoin d'attendre l'API
-  // On prend une photo Wikipedia selon la compagnie ou un avion générique
-  showPlanePhoto(alI, fl.aircraft?.model || fl.aircraft?.icao || '');
-
-  // Ouvrir le panneau
-  document.getElementById('sidePanel').classList.add('show');
-  document.getElementById('map').classList.add('shifted');
-  selCall=null; // pas d'avion sur la carte sélectionné
-}
-
-let _tableItems=[]; // store for click access
 
 function renderTable(items,isDep){
   _tableItems=items; // store globally for click
