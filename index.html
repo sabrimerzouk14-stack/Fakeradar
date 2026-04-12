@@ -292,7 +292,7 @@ body{font-family:'Nunito',sans-serif;color:var(--txt);background:var(--bg)}
 </div>
 
 <script>
-const RAPIDAPI_KEY='10afcc18cdmsh82284cafd9b38d5p182f29jsn3dda2a9823c2';
+// Clé API gérée côté serveur dans api/flights.js
 
 /* ── AIRPORTS ── */
 const FR={
@@ -1129,17 +1129,14 @@ async function loadAptTable(){
   document.getElementById('aptTable').innerHTML='<div class="ld"><div class="ld-ring"></div><div class="ld-txt">CHARGEMENT HORAIRES...</div></div>';
   const isDep=aptTab==='dep';
 
-  // Essayer AeroDataBox
+  // Charger via Edge Function (clé cachée côté serveur)
   try{
-    const now=new Date();
-    const from=now.toISOString().substring(0,16);
-    const to=new Date(now.getTime()+12*3600000).toISOString().substring(0,16);
-    const url=`https://aerodatabox.p.rapidapi.com/flights/airports/iata/${curIata}/${from}/${to}?withLeg=true&direction=${isDep?'Departure':'Arrival'}&withCancelled=true&withCodeshared=false&withCargo=false&withPrivate=false`;
-    const r=await fetch(url,{headers:{'x-rapidapi-host':'aerodatabox.p.rapidapi.com','x-rapidapi-key':RAPIDAPI_KEY},signal:AbortSignal.timeout(8000)});
+    const r=await fetch(`/api/flights?airport=${curIata}&direction=${isDep?'dep':'arr'}`,{signal:AbortSignal.timeout(10000)});
     if(r.status===429) throw new Error('429');
     if(!r.ok) throw new Error('API '+r.status);
     const d=await r.json();
-    const items=isDep?(d.departures||[]):(d.arrivals||[]);
+    if(!d.ok) throw new Error(d.error||'empty');
+    const items=d.flights||[];
     if(!items.length) throw new Error('empty');
     renderTable(items,isDep);
     return;
