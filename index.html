@@ -642,30 +642,46 @@ const AL={
 // Photos vérifiées via Wikimedia Commons Special:FilePath
 // Ces noms de fichiers existent réellement sur Commons
 const APT_PHOTOS={
-  // CDG - vue aérienne pistes depuis avion
-  CDG:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/CDG_FROM_A320_F-GJVW_AIR_FRANCE_TAKE_OFF_FLIGHT_CDG-VCE_%2816688368906%29.jpg/800px-CDG_FROM_A320_F-GJVW_AIR_FRANCE_TAKE_OFF_FLIGHT_CDG-VCE_%2816688368906%29.jpg',
-  // ORY - Paris Orly vue aérienne
-  ORY:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Aeroport_Paris-Orly_vue_de_dessus.jpg/800px-Aeroport_Paris-Orly_vue_de_dessus.jpg',
-  // MRS - Marseille vue aérienne depuis mer
-  MRS:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Airport_of_Marseille_Provence.JPG/800px-Airport_of_Marseille_Provence.JPG',
-  // NCE - Nice piste en bord de mer
-  NCE:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Nice_airport_aerial_view.jpg/800px-Nice_airport_aerial_view.jpg',
-  // LYS - Lyon Saint-Exupéry
-  LYS:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Lyon-Saint_Exupery_Airport_Aerial_View.jpg/800px-Lyon-Saint_Exupery_Airport_Aerial_View.jpg',
-  // TLS - Toulouse Blagnac
-  TLS:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Toulouse-Blagnac_Airport.jpg/800px-Toulouse-Blagnac_Airport.jpg',
-  // BOD - Bordeaux Mérignac
-  BOD:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Bordeaux_Airport.jpg/800px-Bordeaux_Airport.jpg',
-  // NTE - Nantes Atlantique
-  NTE:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Nantes_Atlantique_Airport.jpg/800px-Nantes_Atlantique_Airport.jpg',
-  // MLH - EuroAirport Bâle-Mulhouse
-  MLH:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/EuroAirport_aerial_view.jpg/800px-EuroAirport_aerial_view.jpg',
-  // LIL - Lille Lesquin
-  LIL:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/A%C3%A9roport_de_Lille-Lesquin.jpg/800px-A%C3%A9roport_de_Lille-Lesquin.jpg',
-  // SXB - Strasbourg
-  SXB:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/A%C3%A9roport_Strasbourg_Entzheim.jpg/800px-A%C3%A9roport_Strasbourg_Entzheim.jpg',
-  // Fallback générique - approche d'aéroport
-  DEFAULT:'https://images.unsplash.com/photo-1483450388369-9ed95738483c?w=700&h=280&fit=crop&q=80',
+  CDG:'https://images.unsplash.com/photo-1606768737752-5f660b64c804?w=700&h=280&fit=crop&q=85',
+  ORY:'https://images.unsplash.com/photo-1559694097-f27fc9a7fa6b?w=700&h=280&fit=crop&q=85',
+  MRS:'https://images.unsplash.com/photo-1483450388369-9ed95738483c?w=700&h=280&fit=crop&q=85',
+  NCE:'https://images.unsplash.com/photo-1570710891163-6d3b5c47248b?w=700&h=280&fit=crop&q=85',
+  LYS:'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=700&h=280&fit=crop&q=85',
+  TLS:'https://images.unsplash.com/photo-1578570725827-728bcbd42e71?w=700&h=280&fit=crop&q=85',
+  BOD:'https://images.unsplash.com/photo-1542296332-2e4473faf563?w=700&h=280&fit=crop&q=85',
+  NTE:'https://images.unsplash.com/photo-1553603227-2358aabe8ca4?w=700&h=280&fit=crop&q=85',
+  MLH:'https://images.unsplash.com/photo-1601972602237-8c79241e468b?w=700&h=280&fit=crop&q=85',
+  LIL:'https://images.unsplash.com/photo-1504620168456-8b3dfbbf7c16?w=700&h=280&fit=crop&q=85',
+  SXB:'https://images.unsplash.com/photo-1534786753-b7d7c78b5d4f?w=700&h=280&fit=crop&q=85',
+  MPL:'https://images.unsplash.com/photo-1606768737752-5f660b64c804?w=700&h=280&fit=crop&q=85',
+  RNS:'https://images.unsplash.com/photo-1559694097-f27fc9a7fa6b?w=700&h=280&fit=crop&q=85',
+  BES:'https://images.unsplash.com/photo-1483450388369-9ed95738483c?w=700&h=280&fit=crop&q=85',
+  AJA:'https://images.unsplash.com/photo-1570710891163-6d3b5c47248b?w=700&h=280&fit=crop&q=85',
+  BIA:'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=700&h=280&fit=crop&q=85',
+  CLY:'https://images.unsplash.com/photo-1578570725827-728bcbd42e71?w=700&h=280&fit=crop&q=85',
+  FSC:'https://images.unsplash.com/photo-1542296332-2e4473faf563?w=700&h=280&fit=crop&q=85',
+  BIQ:'https://images.unsplash.com/photo-1553603227-2358aabe8ca4?w=700&h=280&fit=crop&q=85',
+  LDE:'https://images.unsplash.com/photo-1601972602237-8c79241e468b?w=700&h=280&fit=crop&q=85',
+  PUF:'https://images.unsplash.com/photo-1504620168456-8b3dfbbf7c16?w=700&h=280&fit=crop&q=85',
+  GNB:'https://images.unsplash.com/photo-1534786753-b7d7c78b5d4f?w=700&h=280&fit=crop&q=85',
+  CMF:'https://images.unsplash.com/photo-1606768737752-5f660b64c804?w=700&h=280&fit=crop&q=85',
+  NCY:'https://images.unsplash.com/photo-1559694097-f27fc9a7fa6b?w=700&h=280&fit=crop&q=85',
+  DIJ:'https://images.unsplash.com/photo-1483450388369-9ed95738483c?w=700&h=280&fit=crop&q=85',
+  AVN:'https://images.unsplash.com/photo-1570710891163-6d3b5c47248b?w=700&h=280&fit=crop&q=85',
+  FNI:'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=700&h=280&fit=crop&q=85',
+  CCF:'https://images.unsplash.com/photo-1578570725827-728bcbd42e71?w=700&h=280&fit=crop&q=85',
+  LRH:'https://images.unsplash.com/photo-1542296332-2e4473faf563?w=700&h=280&fit=crop&q=85',
+  LIG:'https://images.unsplash.com/photo-1553603227-2358aabe8ca4?w=700&h=280&fit=crop&q=85',
+  CFR:'https://images.unsplash.com/photo-1601972602237-8c79241e468b?w=700&h=280&fit=crop&q=85',
+  LRT:'https://images.unsplash.com/photo-1504620168456-8b3dfbbf7c16?w=700&h=280&fit=crop&q=85',
+  RDZ:'https://images.unsplash.com/photo-1534786753-b7d7c78b5d4f?w=700&h=280&fit=crop&q=85',
+  ETZ:'https://images.unsplash.com/photo-1606768737752-5f660b64c804?w=700&h=280&fit=crop&q=85',
+  VNE:'https://images.unsplash.com/photo-1559694097-f27fc9a7fa6b?w=700&h=280&fit=crop&q=85',
+  CER:'https://images.unsplash.com/photo-1483450388369-9ed95738483c?w=700&h=280&fit=crop&q=85',
+  PGF:'https://images.unsplash.com/photo-1570710891163-6d3b5c47248b?w=700&h=280&fit=crop&q=85',
+  AGF:'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=700&h=280&fit=crop&q=85',
+  PIS:'https://images.unsplash.com/photo-1578570725827-728bcbd42e71?w=700&h=280&fit=crop&q=85',
+  DEFAULT:'https://images.unsplash.com/photo-1606768737752-5f660b64c804?w=700&h=280&fit=crop&q=85',
 };
 const _photoCache={}; // Cache photos chargées
 
