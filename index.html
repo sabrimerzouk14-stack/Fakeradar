@@ -1126,28 +1126,23 @@ async function loadAptPanel(){
 async function loadAptTable(){
   const ap=FR[curIata];if(!ap)return;
   if(aptTab==='gnd'){showGnd();return;}
-  document.getElementById('aptTable').innerHTML='<div class="ld"><div class="ld-ring"></div><div class="ld-txt">CHARGEMENT HORAIRES...</div></div>';
+  document.getElementById('aptTable').innerHTML='<div class="ld"><div class="ld-ring"></div><div class="ld-txt">CHARGEMENT...</div></div>';
   const isDep=aptTab==='dep';
 
-  // Charger via Edge Function (clé cachée côté serveur)
   try{
-    const r=await fetch(`/api/flights?airport=${curIata}&direction=${isDep?'dep':'arr'}`,{signal:AbortSignal.timeout(10000)});
-    if(r.status===429) throw new Error('429');
-    if(!r.ok) throw new Error('API '+r.status);
+    const r=await fetch(`/api/flights?airport=${curIata}&direction=${isDep?'dep':'arr'}`,{signal:AbortSignal.timeout(15000)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json();
-    if(!d.ok) throw new Error(d.error||'empty');
-    const items=d.flights||[];
-    if(!items.length) throw new Error('empty');
-    renderTable(items,isDep);
-    return;
-  }catch(e){
-    if(e.message==='429'||e.message.includes('429')){
-      // Quota épuisé → données simulées + message
-      document.getElementById('aptTable').innerHTML='';
-      renderSimulated(isDep);
+    console.log('Airport API response:', d.ok, d.flights?.length, d.error);
+    if(d.ok && d.flights && d.flights.length>0){
+      renderTable(d.flights,isDep);
       return;
     }
-    document.getElementById('aptTable').innerHTML=`<div class="ld-err">Données indisponibles<br><small>${e.message}</small></div>`;
+    throw new Error(d.error||'no flights');
+  }catch(e){
+    console.error('loadAptTable error:', e.message);
+    document.getElementById('aptTable').innerHTML=`<div class="ld-err">Erreur: ${e.message}</div>`;
+    setTimeout(()=>renderSimulated(isDep), 1500);
   }
 }
 
