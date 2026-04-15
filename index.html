@@ -642,46 +642,30 @@ const AL={
 // Photos vérifiées via Wikimedia Commons Special:FilePath
 // Ces noms de fichiers existent réellement sur Commons
 const APT_PHOTOS={
-  CDG:'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=700&h=280&fit=crop&q=80',
-  ORY:'https://images.unsplash.com/photo-1499856374751-af10984df714?w=700&h=280&fit=crop&q=80',
-  MRS:'https://images.unsplash.com/photo-1580847097346-72d80f164702?w=700&h=280&fit=crop&q=80',
-  NCE:'https://images.unsplash.com/photo-1491555103944-7c647fd857e6?w=700&h=280&fit=crop&q=80',
-  LYS:'https://images.unsplash.com/photo-1524396309943-e03f5249f002?w=700&h=280&fit=crop&q=80',
-  TLS:'https://images.unsplash.com/photo-1597838816882-4435b1977fbe?w=700&h=280&fit=crop&q=80',
-  BOD:'https://images.unsplash.com/photo-1593014793701-88dd0f434a67?w=700&h=280&fit=crop&q=80',
-  NTE:'https://images.unsplash.com/photo-1564221710304-0b37c8b9d729?w=700&h=280&fit=crop&q=80',
-  MLH:'https://images.unsplash.com/photo-1573108724029-4c46571d6490?w=700&h=280&fit=crop&q=80',
-  LIL:'https://images.unsplash.com/photo-1558461791-a5c5ee8caf7c?w=700&h=280&fit=crop&q=80',
-  SXB:'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=700&h=280&fit=crop&q=80',
-  MPL:'https://images.unsplash.com/photo-1599393614914-fa01e67b07fa?w=700&h=280&fit=crop&q=80',
-  RNS:'https://images.unsplash.com/photo-1574166475487-7d21c9b4e9d0?w=700&h=280&fit=crop&q=80',
-  BES:'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=700&h=280&fit=crop&q=80',
-  AJA:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=700&h=280&fit=crop&q=80',
-  BIA:'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=700&h=280&fit=crop&q=80',
-  CLY:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=700&h=280&fit=crop&q=80',
-  FSC:'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=700&h=280&fit=crop&q=80',
-  BIQ:'https://images.unsplash.com/photo-1520942702018-0862200e6873?w=700&h=280&fit=crop&q=80',
-  LDE:'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=700&h=280&fit=crop&q=80',
-  PUF:'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=700&h=280&fit=crop&q=80',
-  GNB:'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=700&h=280&fit=crop&q=80',
-  CMF:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=700&h=280&fit=crop&q=80',
-  NCY:'https://images.unsplash.com/photo-1549144511-f099e773c147?w=700&h=280&fit=crop&q=80',
-  DIJ:'https://images.unsplash.com/photo-1548345680-f5475ea5df84?w=700&h=280&fit=crop&q=80',
-  AVN:'https://images.unsplash.com/photo-1594818379496-da1e345b0ded?w=700&h=280&fit=crop&q=80',
-  FNI:'https://images.unsplash.com/photo-1599638080600-a56aedae1bdf?w=700&h=280&fit=crop&q=80',
-  CCF:'https://images.unsplash.com/photo-1558461791-a5c5ee8caf7c?w=700&h=280&fit=crop&q=80',
-  LRH:'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=700&h=280&fit=crop&q=80',
-  LIG:'https://images.unsplash.com/photo-1593014793701-88dd0f434a67?w=700&h=280&fit=crop&q=80',
-  CFR:'https://images.unsplash.com/photo-1589519160732-576f165b9a9a?w=700&h=280&fit=crop&q=80',
-  LRT:'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=700&h=280&fit=crop&q=80',
-  RDZ:'https://images.unsplash.com/photo-1558618048-fce50c2bf96f?w=700&h=280&fit=crop&q=80',
-  ETZ:'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=700&h=280&fit=crop&q=80',
-  VNE:'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=700&h=280&fit=crop&q=80',
-  CER:'https://images.unsplash.com/photo-1589519160732-576f165b9a9a?w=700&h=280&fit=crop&q=80',
-  PGF:'https://images.unsplash.com/photo-1558618048-fce50c2bf96f?w=700&h=280&fit=crop&q=80',
-  AGF:'https://images.unsplash.com/photo-1593014793701-88dd0f434a67?w=700&h=280&fit=crop&q=80',
-  PIS:'https://images.unsplash.com/photo-1558461791-a5c5ee8caf7c?w=700&h=280&fit=crop&q=80',
-  DEFAULT:'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=700&h=280&fit=crop&q=80',
+  // CDG - vue aérienne pistes depuis avion
+  CDG:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/CDG_FROM_A320_F-GJVW_AIR_FRANCE_TAKE_OFF_FLIGHT_CDG-VCE_%2816688368906%29.jpg/800px-CDG_FROM_A320_F-GJVW_AIR_FRANCE_TAKE_OFF_FLIGHT_CDG-VCE_%2816688368906%29.jpg',
+  // ORY - Paris Orly vue aérienne
+  ORY:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Aeroport_Paris-Orly_vue_de_dessus.jpg/800px-Aeroport_Paris-Orly_vue_de_dessus.jpg',
+  // MRS - Marseille vue aérienne depuis mer
+  MRS:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Airport_of_Marseille_Provence.JPG/800px-Airport_of_Marseille_Provence.JPG',
+  // NCE - Nice piste en bord de mer
+  NCE:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Nice_airport_aerial_view.jpg/800px-Nice_airport_aerial_view.jpg',
+  // LYS - Lyon Saint-Exupéry
+  LYS:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Lyon-Saint_Exupery_Airport_Aerial_View.jpg/800px-Lyon-Saint_Exupery_Airport_Aerial_View.jpg',
+  // TLS - Toulouse Blagnac
+  TLS:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Toulouse-Blagnac_Airport.jpg/800px-Toulouse-Blagnac_Airport.jpg',
+  // BOD - Bordeaux Mérignac
+  BOD:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Bordeaux_Airport.jpg/800px-Bordeaux_Airport.jpg',
+  // NTE - Nantes Atlantique
+  NTE:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Nantes_Atlantique_Airport.jpg/800px-Nantes_Atlantique_Airport.jpg',
+  // MLH - EuroAirport Bâle-Mulhouse
+  MLH:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/EuroAirport_aerial_view.jpg/800px-EuroAirport_aerial_view.jpg',
+  // LIL - Lille Lesquin
+  LIL:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/A%C3%A9roport_de_Lille-Lesquin.jpg/800px-A%C3%A9roport_de_Lille-Lesquin.jpg',
+  // SXB - Strasbourg
+  SXB:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/A%C3%A9roport_Strasbourg_Entzheim.jpg/800px-A%C3%A9roport_Strasbourg_Entzheim.jpg',
+  // Fallback générique - approche d'aéroport
+  DEFAULT:'https://images.unsplash.com/photo-1483450388369-9ed95738483c?w=700&h=280&fit=crop&q=80',
 };
 const _photoCache={}; // Cache photos chargées
 
@@ -1293,8 +1277,15 @@ async function fetchPhoto(icao,call){
 
 /* ── PHOTO AÉROPORT ── */
 function loadAptPhoto(iata, ap) {
-  const url = APT_PHOTOS[iata] || APT_PHOTOS.DEFAULT;
-  setAptPhoto(url, ap.n);
+  const url = APT_PHOTOS[iata] || APT_PHOTOS['DEFAULT'];
+  const fb  = APT_PHOTOS['DEFAULT'];
+  const el  = document.getElementById('aptPhoto');
+  if (!el) return;
+  const badge = `<div class="apt-photo-credit">📷 ${ap.n}</div>`;
+  // Try primary, fallback to default on error
+  el.innerHTML = `<img src="${url}" alt="${ap.n}"
+    style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.8)"
+    onerror="this.src='${fb}'">${badge}`;
 }
 
 function setAptPhoto(url, name) {
