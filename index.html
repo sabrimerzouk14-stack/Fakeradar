@@ -43,6 +43,7 @@ body{font-family:'Space Grotesk',sans-serif;color:var(--txt);background:var(--bg
 
 #map{position:fixed;inset:0;z-index:0;transition:left .4s cubic-bezier(.4,0,.2,1)}
 #map.shifted{left:min(360px,90vw)}
+#map.apt-shifted{right:min(360px,90vw);left:0}
 
 .leaflet-control-zoom{border:none!important;border-radius:10px!important;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.5),0 0 0 1px var(--border)!important;margin-right:14px!important;margin-bottom:20px!important;backdrop-filter:blur(12px)}
 .leaflet-control-zoom a{background:var(--surface)!important;color:var(--accent)!important;font-size:16px!important;line-height:32px!important;width:32px!important;height:32px!important;border:none!important;border-bottom:1px solid var(--border)!important}
@@ -329,45 +330,51 @@ body{font-family:'Space Grotesk',sans-serif;color:var(--txt);background:var(--bg
 .sp-info-l{font-size:11px;color:var(--txt2)}
 .sp-info-v{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--txt);text-align:right;letter-spacing:.02em}
 
-/* ── AIRPORT PANEL ── */
+/* ── AIRPORT PANEL — Side panel style FR24 ── */
 .apt-panel{
-  position:fixed;left:0;right:0;bottom:0;z-index:500;
+  position:fixed;top:0;right:0;bottom:0;z-index:600;
+  width:min(360px,90vw);
   background:var(--surface);
   backdrop-filter:blur(24px) saturate(180%);
   -webkit-backdrop-filter:blur(24px) saturate(180%);
-  border-radius:20px 20px 0 0;
-  border-top:1px solid var(--border2);
-  transform:translateY(100%);
-  transition:transform .42s cubic-bezier(.4,0,.2,1);
-  height:80dvh;display:flex;flex-direction:column;
-  box-shadow:0 -8px 40px rgba(0,0,0,.5);
+  border-left:1px solid var(--border);
+  transform:translateX(100%);
+  transition:transform .4s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+  box-shadow:-8px 0 40px rgba(0,0,0,.5);
+  overflow:hidden;
 }
-.apt-panel.show{transform:translateY(0)}
-.apt-handle{padding:10px 0 0;display:flex;justify-content:center;flex-shrink:0;cursor:grab}
-.apt-hbar{width:32px;height:3px;border-radius:2px;background:var(--border2)}
-.apt-head{padding:10px 16px 0;flex-shrink:0}
-.apt-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px}
+.apt-panel.show{transform:translateX(0)}
+.apt-handle{display:none}
+.apt-hbar{display:none}
+.apt-head{
+  padding:56px 16px 0;flex-shrink:0;
+  background:linear-gradient(to bottom,rgba(0,0,0,.3),transparent);
+  position:relative;
+}
+.apt-title-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:3px}
 .apt-title{
-  font-size:17px;font-weight:600;color:var(--txt);
-  letter-spacing:-.01em;
+  font-size:16px;font-weight:700;
+  color:var(--accent);
+  letter-spacing:-.01em;line-height:1.2;
 }
 .apt-close{
   width:28px;height:28px;border-radius:8px;
-  background:rgba(255,255,255,.05);border:1px solid var(--border);
+  background:rgba(255,255,255,.08);border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;
-  font-size:12px;color:var(--txt3);cursor:pointer;transition:all .15s;
+  font-size:12px;color:var(--txt2);cursor:pointer;transition:all .15s;flex-shrink:0;
 }
-.apt-close:hover{background:rgba(255,68,68,.1);color:var(--red)}
+.apt-close:hover{background:rgba(255,68,68,.15);color:var(--red)}
 .apt-meta{
-  display:flex;align-items:center;gap:8px;
-  font-size:11px;color:var(--txt3);margin-bottom:8px;
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;color:var(--txt2);margin-bottom:10px;
   font-family:'JetBrains Mono',monospace;letter-spacing:.04em;
 }
-.apt-photo{width:100%;height:110px;position:relative;overflow:hidden;flex-shrink:0;background:var(--bg)}
-.apt-photo img{width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.7)}
+.apt-photo{width:100%;height:160px;position:relative;overflow:hidden;flex-shrink:0;background:var(--bg)}
+.apt-photo img{width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.75)}
 .apt-photo::after{
   content:'';position:absolute;inset:0;
-  background:linear-gradient(to bottom,transparent 40%,var(--surface));
+  background:linear-gradient(to bottom,rgba(8,12,24,.4) 0%,transparent 40%,var(--surface) 100%);
 }
 .apt-photo-credit{position:absolute;bottom:6px;left:10px;z-index:1;font-size:9px;color:rgba(255,255,255,.4);font-style:italic}
 
@@ -377,24 +384,46 @@ body{font-family:'Space Grotesk',sans-serif;color:var(--txt);background:var(--bg
   padding:10px 4px;border-right:1px solid var(--border);
 }
 .apt-w-cell:last-child{border-right:none}
-.apt-w-icon{font-size:16px;margin-bottom:3px}
-.apt-w-val{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;color:var(--txt)}
+.apt-w-icon{font-size:18px;margin-bottom:3px}
+.apt-w-val{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:var(--txt)}
 .apt-w-lbl{font-size:8px;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
 
-.apt-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;background:rgba(0,0,0,.2)}
+/* Onglets style FR24 bas */
+.apt-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;background:rgba(0,0,0,.3)}
 .apt-tab{
-  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:8px 4px 7px;cursor:pointer;
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:9px 4px 8px;cursor:pointer;
   border-bottom:2px solid transparent;
   transition:all .15s;color:var(--txt3);
 }
-.apt-tab-ico{font-size:15px;line-height:1}
+.apt-tab-ico{font-size:16px;line-height:1}
 .apt-tab-lbl{font-size:8px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
 .apt-tab.on{color:var(--accent);border-bottom-color:var(--accent)}
-.apt-tab.on .apt-tab-lbl{color:var(--accent)}
 
 .apt-body{flex:1;overflow-y:scroll;overscroll-behavior:contain;scrollbar-width:none}
 .apt-body::-webkit-scrollbar{display:none}
+
+/* Accordéon sous-menus */
+.apt-section{border-bottom:1px solid var(--border)}
+.apt-section-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;cursor:pointer;transition:background .15s;
+  user-select:none;
+}
+.apt-section-header:hover{background:rgba(255,255,255,.03)}
+.apt-section-left{display:flex;align-items:center;gap:12px}
+.apt-section-ico{font-size:16px;width:20px;text-align:center;color:var(--txt2)}
+.apt-section-title{font-size:13px;font-weight:500;color:var(--txt);letter-spacing:-.01em}
+.apt-section-badge{
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  background:rgba(0,212,255,.1);color:var(--accent);
+  border:1px solid rgba(0,212,255,.2);border-radius:10px;
+  padding:2px 7px;margin-left:6px;
+}
+.apt-section-arrow{font-size:12px;color:var(--txt3);transition:transform .2s}
+.apt-section-arrow.open{transform:rotate(180deg)}
+.apt-section-body{display:none;background:rgba(0,0,0,.2)}
+.apt-section-body.open{display:block}
 
 /* ── FLIGHT TABLE ── */
 .ft-head{
@@ -537,36 +566,108 @@ body{font-family:'Space Grotesk',sans-serif;color:var(--txt);background:var(--bg
   </div>
 </div>
 
-<!-- AIRPORT PANEL -->
+<!-- AIRPORT PANEL — Side panel FR24 style -->
 <div class="apt-panel" id="aptPanel">
-  <div class="apt-handle" id="aptHandle"><div class="apt-hbar"></div></div>
   <div class="apt-head">
-    <div class="apt-title-row"><div class="apt-title" id="aptTitle">—</div><div class="apt-close" onclick="closeAptPanel()">✕</div></div>
-    <div class="apt-meta" id="aptMeta">—</div>
+    <div class="apt-title-row">
+      <div>
+        <div class="apt-title" id="aptTitle">—</div>
+        <div class="apt-meta" id="aptMeta">—</div>
+      </div>
+      <div class="apt-close" onclick="closeAptPanel()">✕</div>
+    </div>
   </div>
-  <div class="apt-photo" id="aptPhoto"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:36px;opacity:.3">🛫</div></div>
+
+  <!-- Photo -->
+  <div class="apt-photo" id="aptPhoto">
+    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:36px;opacity:.2">🛫</div>
+  </div>
+
+  <!-- Météo -->
   <div class="apt-weather">
     <div class="apt-w-cell"><div class="apt-w-icon" id="wIcon">🌤️</div><div class="apt-w-val" id="wCond">—</div><div class="apt-w-lbl">Conditions</div></div>
-    <div class="apt-w-cell"><div class="apt-w-icon">🌡️</div><div class="apt-w-val" id="wTemp">—</div><div class="apt-w-lbl">Température</div></div>
+    <div class="apt-w-cell"><div class="apt-w-icon">🌡️</div><div class="apt-w-val" id="wTemp">—</div><div class="apt-w-lbl">Temp.</div></div>
     <div class="apt-w-cell"><div class="apt-w-icon">💨</div><div class="apt-w-val" id="wWind">—</div><div class="apt-w-lbl">Vent</div></div>
-    <div class="apt-w-cell"><div class="apt-w-icon">👁️</div><div class="apt-w-val" id="wVis">—</div><div class="apt-w-lbl">Visibilité</div></div>
+    <div class="apt-w-cell"><div class="apt-w-icon">👁️</div><div class="apt-w-val" id="wVis">—</div><div class="apt-w-lbl">Visib.</div></div>
   </div>
-  <div class="apt-tabs">
-    <div class="apt-tab on" id="atDep" onclick="switchAptTab('dep')"><div class="apt-tab-ico">🛫</div><div class="apt-tab-lbl">Départs</div></div>
-    <div class="apt-tab" id="atArr" onclick="switchAptTab('arr')"><div class="apt-tab-ico">🛬</div><div class="apt-tab-lbl">Arrivées</div></div>
-    <div class="apt-tab" id="atGnd" onclick="switchAptTab('gnd')"><div class="apt-tab-ico">🅿️</div><div class="apt-tab-lbl">Au sol</div></div>
-  </div>
+
+  <!-- Scrollable body -->
   <div class="apt-body">
-    <div class="ft-head">
-      <div style="width:32px;flex-shrink:0"></div>
-      <div class="ft-hc" style="flex:1.1">Vol</div>
-      <div class="ft-hc" style="flex:2">Destination</div>
-      <div class="ft-hc" style="flex:.8;text-align:right">Heure</div>
-      <div class="ft-hc" style="flex:.9;text-align:right">Statut</div>
+
+    <!-- Départs -->
+    <div class="apt-section">
+      <div class="apt-section-header" onclick="toggleSection('dep')">
+        <div class="apt-section-left">
+          <span class="apt-section-ico">🛫</span>
+          <span class="apt-section-title">Départs</span>
+        </div>
+        <span class="apt-section-arrow" id="arr-dep">▼</span>
+      </div>
+      <div class="apt-section-body open" id="sec-dep">
+        <div class="ft-head">
+          <div style="width:28px;flex-shrink:0"></div>
+          <div class="ft-hc" style="flex:1.1">Vol</div>
+          <div class="ft-hc" style="flex:2">Destination</div>
+          <div class="ft-hc" style="flex:.8;text-align:right">Heure</div>
+          <div class="ft-hc" style="flex:.9;text-align:right">Statut</div>
+        </div>
+        <div id="aptTableDep"><div class="ld"><div class="ld-ring"></div><div class="ld-txt">CHARGEMENT...</div></div></div>
+      </div>
     </div>
-    <div id="aptTable"><div class="ld"><div class="ld-ring"></div><div class="ld-txt">CHARGEMENT...</div></div></div>
+
+    <!-- Arrivées -->
+    <div class="apt-section">
+      <div class="apt-section-header" onclick="toggleSection('arr')">
+        <div class="apt-section-left">
+          <span class="apt-section-ico">🛬</span>
+          <span class="apt-section-title">Arrivées</span>
+        </div>
+        <span class="apt-section-arrow" id="arr-arr">▼</span>
+      </div>
+      <div class="apt-section-body" id="sec-arr">
+        <div class="ft-head">
+          <div style="width:28px;flex-shrink:0"></div>
+          <div class="ft-hc" style="flex:1.1">Vol</div>
+          <div class="ft-hc" style="flex:2">Origine</div>
+          <div class="ft-hc" style="flex:.8;text-align:right">Heure</div>
+          <div class="ft-hc" style="flex:.9;text-align:right">Statut</div>
+        </div>
+        <div id="aptTableArr"><div class="ld"><div class="ld-ring"></div><div class="ld-txt">CHARGEMENT...</div></div></div>
+      </div>
+    </div>
+
+    <!-- Au sol -->
+    <div class="apt-section">
+      <div class="apt-section-header" onclick="toggleSection('gnd')">
+        <div class="apt-section-left">
+          <span class="apt-section-ico">🅿️</span>
+          <span class="apt-section-title">Au sol</span>
+          <span class="apt-section-badge" id="gndCount">0</span>
+        </div>
+        <span class="apt-section-arrow" id="arr-gnd">▼</span>
+      </div>
+      <div class="apt-section-body" id="sec-gnd">
+        <div id="aptTableGnd"><div class="ld"><div class="ld-txt">AUCUN VOL AU SOL</div></div></div>
+      </div>
+    </div>
+
+    <!-- Infos aéroport -->
+    <div class="apt-section">
+      <div class="apt-section-header" onclick="toggleSection('info')">
+        <div class="apt-section-left">
+          <span class="apt-section-ico">ℹ️</span>
+          <span class="apt-section-title">Infos & Pistes</span>
+        </div>
+        <span class="apt-section-arrow" id="arr-info">▼</span>
+      </div>
+      <div class="apt-section-body" id="sec-info">
+        <div id="aptInfo" style="padding:14px 16px;font-size:12px;color:var(--txt2);line-height:1.6"></div>
+      </div>
+    </div>
+
   </div>
 </div>
+
 
 <script>
 // Clé API gérée côté serveur dans api/flights.js
@@ -942,7 +1043,7 @@ function pickAirport(iata){
   if(radCircle){radCircle.setLatLng([ap.lat,ap.lng]);radCircle.setRadius(radius*1852);}
   refreshAptMarkers();
   Object.values(markers).forEach(m=>m.remove());markers={};flights=[];
-  document.getElementById('aptPanel').classList.add('show');
+  openAptPanel();
   setTimeout(()=>{loadFlights();loadAptPanel();},300);
 }
 
@@ -1403,7 +1504,9 @@ async function loadAptPanel(){
       document.getElementById('wVis').textContent=cur.visibility>=10000?'>10km':Math.round(cur.visibility/1000)+'km';
     }
   }catch(e){}
-  loadAptTable();
+  // Load dep and gnd automatically
+  loadAptTableFor('dep');
+  setTimeout(()=>showGndInPanel(),500);
 }
 
 async function loadAptTable(){
@@ -1485,12 +1588,139 @@ function showGnd(){
   });
 }
 
-function switchAptTab(t){
-  aptTab=t;haptic(6);
-  ['dep','arr','gnd'].forEach(x=>document.getElementById('at'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('on',x===t));
-  if(t==='gnd')showGnd();else loadAptTable();
+/* ── AIRPORT PANEL LOGIC ── */
+function openAptPanel(){
+  openAptPanel();
+  // Décaler la carte vers la gauche (même logique que side panel)
+  document.getElementById('map').classList.add('apt-shifted');
 }
-function closeAptPanel(){haptic(8);document.getElementById('aptPanel').classList.remove('show');}
+
+function closeAptPanel(){
+  haptic(8);
+  document.getElementById('aptPanel').classList.remove('show');
+  document.getElementById('map').classList.remove('apt-shifted');
+}
+
+function toggleSection(name){
+  const body = document.getElementById('sec-'+name);
+  const arrow = document.getElementById('arr-'+name);
+  if(!body||!arrow)return;
+  haptic(5);
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  arrow.classList.toggle('open', !isOpen);
+  // Charger le contenu si nécessaire
+  if(!isOpen){
+    if(name==='dep') loadAptTableFor('dep');
+    else if(name==='arr') loadAptTableFor('arr');
+    else if(name==='gnd') showGndInPanel();
+    else if(name==='info') loadAptInfo();
+  }
+}
+
+async function loadAptTableFor(dir){
+  const tableId = dir==='dep'?'aptTableDep':'aptTableArr';
+  const ap=FR[curIata];if(!ap)return;
+  document.getElementById(tableId).innerHTML='<div class="ld"><div class="ld-ring"></div><div class="ld-txt">CHARGEMENT...</div></div>';
+  try{
+    const r=await fetch('/api/flights?airport='+curIata+'&direction='+dir,{signal:AbortSignal.timeout(12000)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(d.ok&&d.flights&&d.flights.length>0){
+      renderTableIn(tableId, d.flights, dir==='dep');
+      return;
+    }
+    throw new Error(d.error||'empty');
+  }catch(e){
+    console.error('loadAptTableFor error:', e.message);
+    renderSimulatedIn(tableId, dir==='dep');
+  }
+}
+
+function renderTableIn(tableId, items, isDep){
+  const alE={'AF':'🇫🇷','KL':'🇳🇱','LH':'🇩🇪','BA':'🇬🇧','FR':'💛','EZY':'🟠','VLG':'🟡','IBE':'🇪🇸','TK':'🇹🇷','TP':'🇵🇹','AZ':'🇮🇹','XK':'🏝️','TO':'🟢','W6':'🟣','SK':'🇸🇪','LX':'🇨🇭','OS':'🇦🇹','U2':'🟠','SN':'🇧🇪','AY':'🇫🇮','V7':'🟤','IB':'🇪🇸'};
+  const stM={Departed:'DÉCOLLÉ',Arrived:'ATTERRI',Delayed:'RETARDÉ',Cancelled:'ANNULÉ',Scheduled:'PRÉVU',Expected:'PRÉVU',EnRoute:'EN VOL',Diverted:'DÉROUTÉ',Unknown:'—'};
+  const pt=t=>{if(!t)return'—';const m=String(t).match(/(\d{2}):(\d{2})/);return m?m[1]+':'+m[2]:'—';};
+  const rows = items.map((fl,_i)=>{
+    const alI=fl.airline?.iata||'';
+    const num=fl.number||`${alI}${fl.flightNumber||''}`;
+    const dest=isDep?(fl.arrival?.airport?.iata||'—'):(fl.departure?.airport?.iata||'—');
+    const dn=isDep?(fl.arrival?.airport?.name||''):(fl.departure?.airport?.name||'');
+    const sch=isDep?fl.departure?.scheduledTime?.local:fl.arrival?.scheduledTime?.local;
+    const act=isDep?(fl.departure?.actualTime?.local||fl.departure?.revisedTime?.local):(fl.arrival?.actualTime?.local||fl.arrival?.revisedTime?.local);
+    const st=fl.status||'Unknown';
+    const delay=fl.departure?.delay||fl.arrival?.delay||0;
+    const schT=pt(sch),actT=pt(act);
+    const hasAct=actT&&actT!=='—'&&actT!==schT;
+    const stK=st==='Cancelled'?'can':st==='Delayed'?'del':st==='Arrived'||st==='Departed'?'arr':st==='EnRoute'?'dep':'ok';
+    return `<div class="ft-row" data-idx="${_i}">
+      <div class="ft-airline" style="width:28px;font-size:14px;text-align:center">${alE[alI]||'✈'}</div>
+      <div class="ft-num" style="flex:1.1">${num}</div>
+      <div class="ft-dest" style="flex:2"><div class="ft-dest-iata">${dest}</div><div class="ft-dest-name">${dn}</div></div>
+      <div class="ft-time" style="flex:.8">
+        <div class="ft-time-sch" style="${hasAct?'text-decoration:line-through;color:var(--txt3);font-size:11px':''}">${schT}</div>
+        ${hasAct?`<div class="ft-time-act">${actT}</div>`:''}
+        ${delay>0&&stK==='del'?`<div class="ft-time-del">+${delay}mn</div>`:''}
+      </div>
+      <div class="ft-st" style="flex:.9"><span class="st st-${stK}">${stM[st]||st}</span></div>
+    </div>`;
+  });
+  const el = document.getElementById(tableId);
+  el.innerHTML = rows.join('')||'<div class="ld"><div class="ld-txt">AUCUN VOL</div></div>';
+  // Attach touch events
+  el.querySelectorAll('.ft-row').forEach((row,i)=>{
+    row.addEventListener('click',()=>openFlightFromTable(i));
+    _tableItems = items; // keep global ref
+  });
+}
+
+function renderSimulatedIn(tableId, isDep){
+  // Use existing renderSimulated logic but output to specific div
+  _simulatedTarget = tableId;
+  renderSimulated(isDep);
+}
+
+function showGndInPanel(){
+  const g=flights.filter(f=>f[8]);
+  document.getElementById('gndCount').textContent=g.length;
+  document.getElementById('aptTableGnd').innerHTML=g.length?g.map(f=>{
+    const gc=(f[0]||'').trim();const ac=getAlCode(gc);const ad=ac?AL[ac]:null;
+    return `<div class="ft-row" style="cursor:pointer" onclick="openFlightFromRadar('${gc}')">
+      <div style="width:28px;font-size:14px;text-align:center">${ad?.l||'✈'}</div>
+      <div class="ft-num" style="flex:1.1">${gc}</div>
+      <div class="ft-dest" style="flex:2"><div class="ft-dest-iata">${f[20]||'—'}</div><div class="ft-dest-name">Au sol</div></div>
+      <div class="ft-time" style="flex:.8"><div class="ft-time-sch">${(f[1]||'').toUpperCase()}</div></div>
+      <div class="ft-st" style="flex:.9"><span class="st st-brd">AU SOL</span></div>
+    </div>`;
+  }).join(''):'<div class="ld"><div class="ld-txt">AUCUN VOL AU SOL</div></div>';
+}
+
+function loadAptInfo(){
+  const ap=FR[curIata];if(!ap)return;
+  document.getElementById('aptInfo').innerHTML=`
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'JetBrains Mono',monospace">Identifiants</div>
+      <div>IATA : <span style="color:var(--accent);font-family:'JetBrains Mono',monospace">${curIata}</span></div>
+      <div>ICAO : <span style="color:var(--accent);font-family:'JetBrains Mono',monospace">${ap.icao}</span></div>
+      <div>Ville : ${ap.c}</div>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'JetBrains Mono',monospace">Position</div>
+      <div>Lat : <span style="font-family:'JetBrains Mono',monospace">${ap.lat.toFixed(4)}°N</span></div>
+      <div>Lon : <span style="font-family:'JetBrains Mono',monospace">${ap.lng.toFixed(4)}°E</span></div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'JetBrains Mono',monospace">Trafic annuel</div>
+      <div>~${(ap.p||1)}M passagers</div>
+    </div>
+  `;
+}
+
+// Keep old functions as aliases
+function switchAptTab(t){} // deprecated
+function loadAptTable(){
+  loadAptTableFor('dep');
+}
 
 /* ── RADIUS ── */
 let _rt=null;
@@ -1511,7 +1741,7 @@ window.addEventListener('load',()=>{
   document.getElementById('aptSearch').value='MRS — Marseille Provence';
   loadFlights();
   loadAptPanel();
-  document.getElementById('aptPanel').classList.add('show');
+  openAptPanel();
   rint=setInterval(loadFlights,12000);
 
   // Délégation — touchstart/touchend pour mobile, click pour desktop
