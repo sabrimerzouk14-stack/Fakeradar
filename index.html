@@ -1393,15 +1393,70 @@ async function fetchPhoto(icao,call){
 
 
 /* ── PHOTO AÉROPORT ── */
-function loadAptPhoto(iata, ap) {
-  const url = APT_PHOTOS[iata] || APT_PHOTOS['DEFAULT'];
-  const fb  = APT_PHOTOS['DEFAULT'];
-  const el  = document.getElementById('aptPhoto');
+// Wikipedia article titles par aéroport
+const WIKI_TITLES = {
+  'CDG':'Charles_de_Gaulle_Airport',
+  'ORY':'Orly_Airport',
+  'MRS':'Marseille_Provence_Airport',
+  'NCE':'Nice_Côte_d'Azur_Airport',
+  'LYS':'Lyon-Saint_Exupéry_Airport',
+  'TLS':'Toulouse-Blagnac_Airport',
+  'BOD':'Bordeaux-Mérignac_Airport',
+  'NTE':'Nantes_Atlantique_Airport',
+  'MLH':'EuroAirport_Basel_Mulhouse_Freiburg',
+  'LIL':'Lille_Airport',
+  'SXB':'Strasbourg_Airport',
+  'MPL':'Montpellier-Méditerranée_Airport',
+  'RNS':'Rennes-Saint-Jacques_Airport',
+  'BES':'Brest_Bretagne_Airport',
+  'AJA':'Ajaccio_Napoleon_Bonaparte_Airport',
+  'BIA':'Bastia-Poretta_Airport',
+  'CLY':'Calvi-Sainte-Catherine_Airport',
+  'FSC':'Figari_Sud-Corse_Airport',
+  'BIQ':'Biarritz_Pays_Basque_Airport',
+  'LDE':'Tarbes-Lourdes-Pyrénées_Airport',
+  'GNB':'Grenoble-Isère_Airport',
+  'NCY':'Annecy-Haute-Savoie–Mont_Blanc_Airport',
+  'DIJ':'Dijon_Bourgogne_Airport',
+  'LRH':'La_Rochelle-Île_de_Ré_Airport',
+  'CFR':'Caen_–_Carpiquet_Airport',
+  'ETZ':'Metz-Nancy-Lorraine_Airport',
+  'PGF':'Perpignan-Rivesaltes_Airport'
+};
+
+async function loadAptPhoto(iata, ap) {
+  const el = document.getElementById('aptPhoto');
   if (!el) return;
+  const fb = 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=700&h=280&fit=crop&q=85';
   const badge = `<div class="apt-photo-credit">📷 ${ap.n}</div>`;
-  // Try primary, fallback to default on error
+
+  // Afficher placeholder pendant le chargement
+  el.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3)"><div style="font-size:28px;opacity:.3">🛫</div></div>`;
+
+  const title = WIKI_TITLES[iata];
+  if (title) {
+    try {
+      const r = await fetch(
+        `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
+        { headers: { 'Accept': 'application/json' }, signal: AbortSignal.timeout(6000) }
+      );
+      if (r.ok) {
+        const d = await r.json();
+        const img = d.originalimage?.source || d.thumbnail?.source;
+        if (img) {
+          el.innerHTML = `<img src="${img}" alt="${ap.n}"
+            style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.75)"
+            onerror="this.src='${fb}'">${badge}`;
+          return;
+        }
+      }
+    } catch(e) {}
+  }
+
+  // Fallback Unsplash
+  const url = APT_PHOTOS[iata] || APT_PHOTOS['DEFAULT'];
   el.innerHTML = `<img src="${url}" alt="${ap.n}"
-    style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.8)"
+    style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.75)"
     onerror="this.src='${fb}'">${badge}`;
 }
 
