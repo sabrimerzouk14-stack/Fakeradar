@@ -504,7 +504,7 @@ body{font-family:'Space Grotesk',sans-serif;color:var(--txt);background:var(--bg
   </div>
   <div class="tb-search">
     <span class="tb-ico">🔍</span>
-    <input class="tb-input" id="aptSearch" type="text" placeholder="Rechercher un aéroport..." autocomplete="off"
+    <input class="tb-input" id="aptSearch" type="text" placeholder="Aéroport ou n° de vol (ex: AF1234)..." autocomplete="off"
       oninput="onAptSearch(this.value)" onkeydown="onAptKey(event)" onfocus="showSugg()" onblur="setTimeout(hideSugg,200)">
     <div class="sugg-box" id="suggBox"></div>
   </div>
@@ -1012,6 +1012,14 @@ function updateCount(){document.getElementById('tbCount').textContent=`${flights
 /* ── SEARCH ── */
 function onAptSearch(v){
   if(!v.trim()){hideSugg();return;}
+  
+  // Détecter si c'est un numéro de vol (ex: AF1234, EZY3456)
+  const isFlightNum = /^[A-Za-z]{1,3}\d{1,5}$/.test(v.trim().replace(/\s/g,''));
+  if(isFlightNum){
+    showFlightSugg(v.trim().toUpperCase());
+    return;
+  }
+  
   const q=v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   const hits=Object.entries(FR).filter(([k,ap])=>{
     const s=(ap.n+' '+ap.c+' '+k).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -1027,9 +1035,113 @@ function onAptSearch(v){
   ).join('');
   document.getElementById('suggBox').classList.add('show');
 }
+
+/* ── RECHERCHE PAR NUMÉRO DE VOL ── */
+function showFlightSugg(flightNum){
+  // Chercher d'abord dans les avions déjà sur le radar
+  const found = flights.filter(f => {
+    const call = (f[0]||'').trim().toUpperCase().replace(/\s/g,'');
+    return call.startsWith(flightNum) || flightNum.startsWith(call.substring(0,flightNum.length));
+  }).slice(0,5);
+
+  const alCode = flightNum.match(/^([A-Za-z]{2,3})/)?.[1]?.toUpperCase();
+  const alData = alCode ? AL[alCode] : null;
+
+  if(found.length > 0){
+    document.getElementById('suggBox').innerHTML = found.map(f => {
+      const call=(f[0]||'').trim();
+      const ac2=getAlCode(call);const ad2=ac2?AL[ac2]:null;
+      const alt=f[7]?Math.round(f[7]/0.3048).toLocaleString()+' ft':'Au sol';
+      return `<div class="sugg-item" onmousedown="searchFlight('${call}')">
+        <span class="sugg-iata" style="font-size:16px">${ad2?.l||'✈'}</span>
+        <span class="sugg-name">${call} · ${ad2?.n||'—'}</span>
+        <span class="sugg-city">${alt}</span>
+      </div>`;
+    }).join('');
+    document.getElementById('suggBox').classList.add('show');
+  } else {
+    // Vol pas encore en vol ou hors zone — montrer option de recherche
+    document.getElementById('suggBox').innerHTML = `
+      <div class="sugg-item" onmousedown="searchFlight('${flightNum}')">
+        <span class="sugg-iata" style="font-size:16px">${alData?.l||'✈'}</span>
+        <span class="sugg-name">Rechercher ${flightNum}</span>
+        <span class="sugg-city">${alData?.n||'Vol'}</span>
+      </div>`;
+    document.getElementById('suggBox').classList.add('show');
+  }
+}
+
+async function searchFlight(flightNum){
+  hideSugg();
+  haptic(12);
+  
+  // 1. Chercher dans les avions sur le radar
+  const found = flights.find(f => (f[0]||'').trim().toUpperCase().replace(/\s/g,'') === flightNum.replace(/\s/g,''));
+  if(found){
+    const call=(found[0]||'').trim();
+    // Centrer la carte sur l'avion
+    if(found[6]&&found[5]) map.flyTo([found[6],found[5]],12,{duration:1.2});
+    openFlight(call, found);
+    document.getElementById('aptSearch').value = flightNum;
+    return;
+  }
+
+  // 2. Vol pas sur le radar — chercher via API
+  document.getElementById('aptSearch').value = flightNum + ' — recherche...';
+  try{
+    const r = await fetch('/api/flights?callsign='+encodeURIComponent(flightNum), {signal:AbortSignal.timeout(8000)});
+    const d = await r.json();
+    if(d.ok){
+      // Ouvrir panneau avec les infos trouvées
+      document.getElementById('spCall').textContent = flightNum;
+      document.getElementById('spBadge').textContent = 'RECHERCHÉ';
+      document.getElementById('spBadge').className = 'sp-badge vol';
+      document.getElementById('spType').textContent = d.type||'—';
+      document.getElementById('spAirline').textContent = d.airline||getAlCode(flightNum)?AL[getAlCode(flightNum)]?.n||'—':'—';
+      if(d.dep){document.getElementById('spFrom').textContent=d.dep.substring(0,4).toUpperCase();document.getElementById('spFromName').textContent=d.from_long||d.dep;}
+      if(d.arr){document.getElementById('spTo').textContent=d.arr.substring(0,4).toUpperCase();document.getElementById('spToName').textContent=d.to_long||d.arr;}
+      const pt=t=>{if(!t)return'—';const m=String(t).match(/(\d{2}):(\d{2})/);return m?m[1]+':'+m[2]:'—';};
+      document.getElementById('spDepSch').textContent=pt(d.dep_time);
+      document.getElementById('spArrSch').textContent=pt(d.arr_time);
+      ['spDepAct','spArrEst','spAlt','spSpd','spHdg','spVrate','spMach'].forEach(id=>{
+        const el=document.getElementById(id);if(el)el.textContent='—';
+      });
+      document.getElementById('spSqk').textContent='—';
+      document.getElementById('spIcao').textContent='—';
+      document.getElementById('spPos').textContent='Hors zone radar';
+      document.getElementById('spGate').textContent=d.dep_gate?'Porte '+d.dep_gate:'—';
+      const pct=0;
+      document.getElementById('spFill').style.width='5%';
+      document.getElementById('spPlane').style.left='5%';
+      document.getElementById('spD1').textContent='—';document.getElementById('spD2').textContent='—';
+      document.getElementById('spPhoto').innerHTML='<div class="sp-photo-fb"><div class="sp-photo-fb-ico">✈</div></div>';
+      fetchPhoto('',flightNum);
+      document.getElementById('sidePanel').classList.add('show');
+      document.getElementById('map').classList.add('shifted');
+    } else {
+      document.getElementById('aptSearch').value = flightNum + ' — introuvable';
+      setTimeout(()=>document.getElementById('aptSearch').value='',2000);
+    }
+  }catch(e){
+    document.getElementById('aptSearch').value = flightNum + ' — erreur';
+    setTimeout(()=>document.getElementById('aptSearch').value='',2000);
+  }
+}
+
+
 function showSugg(){const v=document.getElementById('aptSearch').value;if(v.trim())onAptSearch(v);}
 function hideSugg(){document.getElementById('suggBox').classList.remove('show');}
-function onAptKey(e){if(e.key==='Enter'){const f=document.querySelector('.sugg-item');if(f)eval(f.getAttribute('onmousedown'));}}
+function onAptKey(e){
+  if(e.key==='Enter'){
+    const f=document.querySelector('.sugg-item');
+    if(f){ eval(f.getAttribute('onmousedown')); }
+    else {
+      // Recherche directe si rien dans les suggestions
+      const v=document.getElementById('aptSearch').value.trim();
+      if(/^[A-Za-z]{1,3}\d{1,5}$/.test(v.replace(/\s/g,''))) searchFlight(v.toUpperCase());
+    }
+  }
+}
 document.addEventListener('click',e=>{if(!e.target.closest('.tb-search'))hideSugg();});
 
 /* ── PICK AIRPORT ── */
