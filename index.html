@@ -510,6 +510,18 @@ body{font-family:'Space Grotesk',sans-serif;color:var(--txt);background:var(--bg
 <body>
 <div id="map"></div>
 
+<!-- Overlays carte -->
+<div class="live-badge" id="liveBadge">
+  <div class="live-dot" id="liveDot"></div>
+  <span class="live-txt" id="liveTxt">DIRECT</span>
+</div>
+
+<div class="radius-ctrl">
+  <span class="rc-val" id="rcVal">150 nm</span>
+  <input class="rc-slider" id="rcSlider" type="range" min="50" max="400" step="25" value="150"
+    oninput="onRadius(this.value)">
+</div>
+
 <div class="topbar">
   <div class="tb-logo">
     <div class="tb-logo-icon">
