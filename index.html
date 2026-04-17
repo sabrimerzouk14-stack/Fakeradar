@@ -829,7 +829,7 @@ function initMap(){
   // Canvas renderer = beaucoup plus performant avec beaucoup d'icônes
   const renderer=L.canvas({padding:0.5});
   map=L.map('map',{zoomControl:true,scrollWheelZoom:true,tap:true,preferCanvas:true})
-    .setView([ap.lat,ap.lng],6);
+    .setView([46.5, 2.5], 6);
   L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=4b71afb1-df28-415d-9ca9-9f1cc4b8ecae',{
     maxZoom:20
   }).addTo(map);
@@ -1945,10 +1945,9 @@ if('serviceWorker' in navigator){
 /* ── INIT ── */
 window.addEventListener('load',()=>{
   initMap();
-  document.getElementById('aptSearch').value='MRS — Marseille Provence';
+  // Démarrer sans panneau ouvert - juste charger les vols
+  document.getElementById('aptSearch').value='';
   loadFlights();
-  loadAptPanel();
-  openAptPanel();
   rint=setInterval(loadFlights,12000);
 
   // Délégation — touchstart/touchend pour mobile, click pour desktop
