@@ -147,6 +147,21 @@ body{font-family:'Space Grotesk',sans-serif;color:var(--txt);background:var(--bg
   backdrop-filter:blur(8px);
 }
 .tb-btn:hover{background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.3)}
+.tb-mode-toggle{
+  display:flex;border-radius:10px;overflow:hidden;
+  border:1px solid var(--border2);flex-shrink:0;
+  background:rgba(0,0,0,.3);
+}
+.tb-mode-btn{
+  padding:6px 10px;font-size:11px;font-weight:600;
+  cursor:pointer;color:var(--txt3);
+  transition:all .15s;white-space:nowrap;
+  font-family:'Space Grotesk',sans-serif;
+}
+.tb-mode-btn.active{
+  background:rgba(0,212,255,.15);
+  color:var(--accent);
+}
 .tb-btn.spinning{animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -502,21 +517,23 @@ body{font-family:'Space Grotesk',sans-serif;color:var(--txt);background:var(--bg
     </div>
     SKYVIEW
   </div>
+
+  <!-- Toggle Aéroport / Vol -->
+  <div class="tb-mode-toggle" id="tbModeToggle">
+    <div class="tb-mode-btn active" id="modeApt" onclick="setSearchMode('apt')">🏢 Aéroport</div>
+    <div class="tb-mode-btn" id="modeFlt" onclick="setSearchMode('flt')">✈️ Vol</div>
+  </div>
+
   <div class="tb-search">
     <span class="tb-ico">🔍</span>
-    <input class="tb-input" id="aptSearch" type="text" placeholder="Aéroport ou n° de vol (ex: AF1234)..." autocomplete="off"
-      oninput="onAptSearch(this.value)" onkeydown="onAptKey(event)" onfocus="showSugg()" onblur="setTimeout(hideSugg,200)">
+    <input class="tb-input" id="aptSearch" type="text" placeholder="Rechercher un aéroport..." autocomplete="off"
+      oninput="onAptSearch(this.value)" onkeydown="onAptKey(event)" onfocus="showSugg()" onblur="setTimer()">
     <div class="sugg-box" id="suggBox"></div>
   </div>
-  <div class="tb-count" id="tbCount">— vols</div>
-  <div class="tb-btn" id="btnRefresh" onclick="refreshFlights()">🔄</div>
-</div>
 
-<div class="live-badge"><div class="live-dot" id="liveDot"></div><div class="live-txt" id="liveTxt">DIRECT</div></div>
-<div class="radius-ctrl">
-  <div class="rc-val"><span id="rcVal">150</span> nm</div>
-  <input class="rc-slider" type="range" min="50" max="400" step="25" value="150" oninput="document.getElementById('rcVal').textContent=this.value;onRadiusChange(+this.value)">
-</div>
+  <div class="tb-count" id="tbCount">— vols</div>
+  <div class="tb-btn" id="refreshBtn" onclick="manualRefresh()" title="Rafraîchir">⟳</div>
+</div></div>
 
 <!-- SIDE PANEL -->
 <div class="side-panel" id="sidePanel">
@@ -1013,8 +1030,8 @@ function updateCount(){document.getElementById('tbCount').textContent=`${flights
 function onAptSearch(v){
   if(!v.trim()){hideSugg();return;}
   
-  // Détecter si c'est un numéro de vol (ex: AF1234, EZY3456)
-  const isFlightNum = /^[A-Za-z]{1,3}\d{1,5}$/.test(v.trim().replace(/\s/g,''));
+  // Mode vol ou détection automatique
+  const isFlightNum = _searchMode==='flt' || /^[A-Za-z]{1,3}\d{1,5}$/.test(v.trim().replace(/\s/g,''));
   if(isFlightNum){
     showFlightSugg(v.trim().toUpperCase());
     return;
@@ -1128,6 +1145,18 @@ async function searchFlight(flightNum){
   }
 }
 
+
+let _searchMode = 'apt';
+function setSearchMode(mode){
+  _searchMode = mode;
+  document.getElementById('modeApt').classList.toggle('active', mode==='apt');
+  document.getElementById('modeFlt').classList.toggle('active', mode==='flt');
+  const input = document.getElementById('aptSearch');
+  input.value = '';
+  input.placeholder = mode==='apt' ? 'Rechercher un aéroport...' : 'N° de vol (ex: AF1234, EZY3456)...';
+  input.focus();
+  hideSugg();
+}
 
 function showSugg(){const v=document.getElementById('aptSearch').value;if(v.trim())onAptSearch(v);}
 function hideSugg(){document.getElementById('suggBox').classList.remove('show');}
