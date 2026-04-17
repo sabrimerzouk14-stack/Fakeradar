@@ -1931,7 +1931,7 @@ function loadAptTable(){
 
 /* ── RADIUS ── */
 let _rt=null;
-function onRadiusChange(v){
+function onRadius(v){
   radius=v;
   if(radCircle)radCircle.setRadius(v*1852);
   clearTimeout(_rt);_rt=setTimeout(refreshFlights,700);
